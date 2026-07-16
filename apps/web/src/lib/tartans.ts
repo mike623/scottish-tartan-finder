@@ -32,7 +32,7 @@ export function getTartanByRef(ref: number): TartanRecord | undefined {
 // Official swatch image. Uses the canonical `/imageCreation` endpoint (the
 // `.aspx` form in imageUrl 301-redirects to it — skip the hop). Square image;
 // cards crop it with object-fit. Returns null if we somehow have no ref.
-export function imageSrc(t: Pick<TartanRecord, 'ref'>, size = 500): string {
+export function imageSrc(t: Pick<TartanRecord, 'ref'>, size = 360): string {
   return `https://www.tartanregister.gov.uk/imageCreation?height=${size}&ref=${t.ref}&width=${size}`;
 }
 
