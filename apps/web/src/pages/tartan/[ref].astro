@@ -30,7 +30,11 @@ const rows: Array<[string, string]> = [
 ];
 ---
 
-<Layout title={`${tartan.name} — Scottish Tartan Finder`} description={`Ref ${tartan.ref} · ${tartan.category} tartan. ${tartan.registrationNotes || ''}`.trim()}>
+<Layout
+  title={`${tartan.name} — Scottish Tartan Finder`}
+  description={`Ref ${tartan.ref} · ${tartan.category} tartan. ${tartan.registrationNotes || ''}`.trim()}
+  image={imageSrc(tartan, 750)}
+>
   <div style="max-width:1180px;margin:0 auto;padding:clamp(24px,3cqw,40px) clamp(18px,5cqw,48px) 72px;">
     <a href={`${base}search`} style="display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:#6b6455;cursor:pointer;margin-bottom:26px;text-decoration:none;">← Back to search</a>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(28px,4cqw,48px);align-items:start;">
