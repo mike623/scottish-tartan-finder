@@ -8,3 +8,4 @@ dist/
 *.sqlite3
 crawler-cache/
 raw-html/
+.gstack/
