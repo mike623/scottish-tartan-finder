@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+.DS_Store
+*.sqlite
+*.sqlite3
+crawler-cache/
+raw-html/
