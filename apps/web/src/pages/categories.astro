@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { categoryCounts } from '../lib/tartans';
+import { base } from '../lib/base';
+
+const counts = categoryCounts();
+const categories = Object.keys(counts).sort();
+---
+
+<Layout title="Categories — Scottish Tartan Finder" active="categories">
+  <div style="max-width:1180px;margin:0 auto;padding:clamp(30px,4cqw,52px) clamp(18px,5cqw,48px) 72px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8a7d5f;margin-bottom:10px;">Browse by type</div>
+    <h1 style="font-size:clamp(2.2rem,5cqw,3.4rem);line-height:1.02;margin-bottom:8px;">Categories</h1>
+    <p style="color:#6b6455;max-width:58ch;line-height:1.6;margin:0 0 32px;">Tartans in the Register are grouped by their purpose and origin — from clan and family designs to districts, corporate, military and commemorative registrations.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
+      {categories.map((c) => (
+        <a class="tf-catcard" href={`${base}search?cat=${encodeURIComponent(c)}`}>
+          <div style="position:absolute;top:0;right:0;width:70px;height:70px;background:repeating-linear-gradient(45deg,#e6dcc3 0 5px,#efe8d6 5px 10px);opacity:.6;"></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7d5f;">{counts[c]} tartans</div>
+          <h3 style="font-size:1.85rem;line-height:1.08;margin:8px 0 14px;max-width:12ch;">{c}</h3>
+          <div style="font-size:14px;font-weight:600;color:#2f5140;">View tartans →</div>
+        </a>
+      ))}
+    </div>
+  </div>
+</Layout>
