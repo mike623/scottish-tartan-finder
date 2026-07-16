@@ -7,8 +7,13 @@ h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;margin:0
 input,select,button{font-family:inherit;}
 ::selection{background:#dfe3cf;}
 #app{container-type:inline-size;min-height:100vh;display:flex;flex-direction:column;background:#f2ece0;}
-.tf-card{display:block;background:#fbf8f1;border:1px solid #e4dcc9;border-radius:3px;overflow:hidden;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;}
+.tf-card{display:block;background:#fbf8f1;border:1px solid #e4dcc9;border-radius:3px;overflow:hidden;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;content-visibility:auto;contain-intrinsic-size:auto 340px;}
 .tf-card:hover{transform:translateY(-3px);box-shadow:0 16px 30px -20px rgba(40,34,20,.55);}
+/* Shared card preview (image over striped placeholder fallback) — used by JS-rendered lists too */
+.tf-prev{aspect-ratio:4/3;position:relative;overflow:hidden;background:#e9e1cf;background-image:repeating-linear-gradient(135deg,#e2d8bd 0 7px,#ece5d3 7px 15px);}
+.tf-prev img{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:cover;background:#e9e1cf;}
+.tf-prev-label{position:absolute;left:10px;bottom:10px;z-index:1;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8a7d5f;background:rgba(251,248,241,.85);padding:3px 7px;border:1px solid #ded3ba;}
+.tf-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:#2f5140;background:#eef0e7;border:1px solid #d9dcc9;padding:3px 8px;}
 .tf-catcard{display:block;background:#fbf8f1;border:1px solid #e4dcc9;border-radius:3px;padding:24px 22px 22px;cursor:pointer;position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease;}
 .tf-catcard:hover{transform:translateY(-3px);box-shadow:0 16px 30px -20px rgba(40,34,20,.55);}
 

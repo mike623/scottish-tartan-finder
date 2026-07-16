@@ -1,11 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import TartanCard from '../components/TartanCard.astro';
-import { tartans, categoryCounts } from '../lib/tartans';
+import { categoryCounts } from '../lib/tartans';
+import { base } from '../lib/base';
 
 const counts = categoryCounts();
 const categories = Object.keys(counts).sort();
-const sorted = [...tartans].sort((a, b) => a.name.localeCompare(b.name));
+const total = Object.values(counts).reduce((a, b) => a + b, 0);
 ---
 
 <Layout title="Search — Scottish Tartan Finder" active="search">
@@ -30,10 +30,9 @@ const sorted = [...tartans].sort((a, b) => a.name.localeCompare(b.name));
         </select>
       </div>
     </div>
-    <div id="count-label" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6b6455;margin:14px 0 22px;">{sorted.length} tartans</div>
-    <div id="results" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;">
-      {sorted.map((t) => <TartanCard tartan={t} cta />)}
-    </div>
+    <div id="count-label" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6b6455;margin:14px 0 22px;">Loading catalogue…</div>
+    <div id="results" data-base={base} data-total={total} style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;"></div>
+    <div id="sentinel" style="height:1px;"></div>
     <div id="empty-state" style="display:none;text-align:center;padding:64px 24px;border:1px dashed #d3c8ae;border-radius:4px;background:#faf6ec;">
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#8a7d5f;">No matches</div>
       <h3 style="font-size:1.9rem;margin:12px 0 8px;">Nothing found for that search</h3>
@@ -41,97 +40,112 @@ const sorted = [...tartans].sort((a, b) => a.name.localeCompare(b.name));
       <button id="clear-filters" type="button" style="background:#2f5140;color:#f6f1e7;border:none;padding:12px 24px;font-weight:600;font-size:14px;cursor:pointer;border-radius:2px;">Clear search &amp; filters</button>
     </div>
   </div>
+
   <script is:inline>
     (function () {
+      var grid = document.getElementById('results');
+      var BASE = grid.dataset.base;
       var qInput = document.getElementById('q');
       var chipsWrap = document.getElementById('chips');
       var sortSelect = document.getElementById('sort');
-      var resultsGrid = document.getElementById('results');
-      var emptyState = document.getElementById('empty-state');
       var countLabel = document.getElementById('count-label');
+      var emptyState = document.getElementById('empty-state');
+      var sentinel = document.getElementById('sentinel');
       var clearBtn = document.getElementById('clear-filters');
-      var cards = Array.prototype.slice.call(resultsGrid.querySelectorAll('.tf-card'));
+      var BATCH = 48;
 
-      var params = new URLSearchParams(window.location.search);
-      var state = {
-        query: params.get('q') || '',
-        cat: params.get('cat') || 'All',
-        sort: 'name',
-      };
-      qInput.value = state.query;
+      var params = new URLSearchParams(location.search);
+      var state = { q: params.get('q') || '', cat: params.get('cat') || 'All', sort: 'name' };
+      qInput.value = state.q;
 
-      function setActiveChip() {
+      var all = [];
+      var filtered = [];
+      var shown = 0;
+
+      function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      function cardHTML(t) {
+        var img = 'https://www.tartanregister.gov.uk/imageCreation?height=500&ref=' + t.r + '&width=500';
+        var meta = [t.d, t.y].filter(Boolean).join(' · ');
+        return '<a class="tf-card" href="' + BASE + 'tartan/' + t.r + '">' +
+          '<div class="tf-prev"><span class="tf-prev-label">tartan preview</span>' +
+          '<img src="' + img + '" alt="' + esc(t.n) + ' tartan pattern" loading="lazy" decoding="async" onerror="this.remove()"></div>' +
+          '<div style="padding:15px 16px 18px;">' +
+          '<span class="tf-badge">' + esc(t.c) + '</span>' +
+          '<h3 style="font-size:1.55rem;line-height:1.08;margin:11px 0 5px;">' + esc(t.n) + '</h3>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;color:#8a7d5f;">Ref ' + t.r + '</div>' +
+          (meta ? '<div style="font-size:13px;color:#6b6455;margin-top:7px;">' + esc(meta) + '</div>' : '') +
+          '<div style="margin-top:13px;font-size:13px;font-weight:600;color:#2f5140;">View details →</div>' +
+          '</div></a>';
+      }
+
+      function applyFilter() {
+        var q = state.q.trim().toLowerCase();
+        filtered = all.filter(function (t) {
+          var okC = state.cat === 'All' || t.c === state.cat;
+          if (!okC) return false;
+          if (!q) return true;
+          return t.n.toLowerCase().indexOf(q) !== -1 || String(t.r).indexOf(q) !== -1 ||
+            (t.d || '').toLowerCase().indexOf(q) !== -1 || t.c.toLowerCase().indexOf(q) !== -1;
+        });
+        if (state.sort === 'ref') filtered.sort(function (a, b) { return a.r - b.r; });
+        else if (state.sort === 'cat') filtered.sort(function (a, b) { return a.c.localeCompare(b.c) || a.n.localeCompare(b.n); });
+        else filtered.sort(function (a, b) { return a.n.localeCompare(b.n); });
+
+        grid.innerHTML = '';
+        shown = 0;
+        renderMore();
+
+        var n = filtered.length;
+        var label = n + (n === 1 ? ' tartan' : ' tartans');
+        if (state.cat !== 'All') label += ' in ' + state.cat;
+        if (q) label += ' matching “' + state.q.trim() + '”';
+        countLabel.textContent = label;
+        emptyState.style.display = n === 0 ? 'block' : 'none';
+        grid.style.display = n === 0 ? 'none' : 'grid';
+
+        var url = new URL(location.href);
+        if (state.q) url.searchParams.set('q', state.q); else url.searchParams.delete('q');
+        if (state.cat !== 'All') url.searchParams.set('cat', state.cat); else url.searchParams.delete('cat');
+        history.replaceState({}, '', url);
+      }
+
+      function renderMore() {
+        if (shown >= filtered.length) return;
+        var next = filtered.slice(shown, shown + BATCH);
+        var html = '';
+        for (var i = 0; i < next.length; i++) html += cardHTML(next[i]);
+        grid.insertAdjacentHTML('beforeend', html);
+        shown += next.length;
+      }
+
+      var io = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) renderMore();
+      }, { rootMargin: '600px 0px' });
+      io.observe(sentinel);
+
+      function setChips() {
         Array.prototype.forEach.call(chipsWrap.querySelectorAll('.tf-chip'), function (chip) {
           chip.classList.toggle('is-active', chip.dataset.cat === state.cat);
         });
       }
 
-      function applySort() {
-        var sorted = cards.slice().sort(function (a, b) {
-          if (state.sort === 'ref') return Number(a.dataset.ref) - Number(b.dataset.ref);
-          if (state.sort === 'cat') {
-            var c = (a.dataset.categoryLc || '').localeCompare(b.dataset.categoryLc || '');
-            return c !== 0 ? c : a.dataset.name.localeCompare(b.dataset.name);
-          }
-          return a.dataset.name.localeCompare(b.dataset.name);
-        });
-        sorted.forEach(function (el) { resultsGrid.appendChild(el); });
-      }
-
-      function render() {
-        var q = state.query.trim().toLowerCase();
-        var visibleCount = 0;
-        cards.forEach(function (card) {
-          var okQ = !q
-            || card.dataset.name.indexOf(q) !== -1
-            || String(card.dataset.ref).indexOf(q) !== -1
-            || (card.dataset.designer || '').indexOf(q) !== -1
-            || (card.dataset.categoryLc || '').indexOf(q) !== -1;
-          var okC = state.cat === 'All' || card.dataset.category === state.cat;
-          var visible = okQ && okC;
-          card.classList.toggle('is-hidden', !visible);
-          if (visible) visibleCount += 1;
-        });
-        applySort();
-        setActiveChip();
-
-        var label = visibleCount + (visibleCount === 1 ? ' tartan' : ' tartans');
-        if (state.cat !== 'All') label += ' in ' + state.cat;
-        if (q) label += ' matching “' + state.query.trim() + '”';
-        countLabel.textContent = label;
-
-        var showEmpty = visibleCount === 0;
-        resultsGrid.style.display = showEmpty ? 'none' : 'grid';
-        emptyState.style.display = showEmpty ? 'block' : 'none';
-
-        var url = new URL(window.location.href);
-        if (state.query) url.searchParams.set('q', state.query); else url.searchParams.delete('q');
-        if (state.cat !== 'All') url.searchParams.set('cat', state.cat); else url.searchParams.delete('cat');
-        window.history.replaceState({}, '', url);
-      }
-
-      qInput.addEventListener('input', function (e) {
-        state.query = e.target.value;
-        render();
-      });
-      sortSelect.addEventListener('change', function (e) {
-        state.sort = e.target.value;
-        render();
-      });
+      qInput.addEventListener('input', function (e) { state.q = e.target.value; applyFilter(); });
+      sortSelect.addEventListener('change', function (e) { state.sort = e.target.value; applyFilter(); });
       chipsWrap.addEventListener('click', function (e) {
         var chip = e.target.closest('.tf-chip');
         if (!chip) return;
-        state.cat = chip.dataset.cat;
-        render();
+        state.cat = chip.dataset.cat; setChips(); applyFilter();
       });
       clearBtn.addEventListener('click', function () {
-        state.query = '';
-        state.cat = 'All';
-        qInput.value = '';
-        render();
+        state.q = ''; state.cat = 'All'; qInput.value = ''; setChips(); applyFilter();
       });
 
-      render();
+      fetch(BASE + 'tartans-lite.json')
+        .then(function (r) { return r.json(); })
+        .then(function (data) { all = data; setChips(); applyFilter(); })
+        .catch(function () { countLabel.textContent = 'Could not load the catalogue.'; });
     })();
   </script>
 </Layout>
