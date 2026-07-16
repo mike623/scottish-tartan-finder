@@ -65,6 +65,28 @@ PRD §5's assumed pattern). The scraper normalises the parameter order to
   `A Man's a Man St Petersburg`, `A Man's a Man Ukraine`, `A Thread in
   Time`, … before `Abbotsford Check` — ASCII space sorts before letters).
 
+## What's New feed (`/whatsNew`) — incremental discovery hook
+
+- `whatsNew.aspx` 301-redirects to the canonical `/whatsNew`; linked from the
+  homepage as "New Tartans".
+- Lists the **~20 most recently registered tartans** as
+  `tartanDetails.aspx?ref=…` links, under a `New Tartans` heading dated the
+  current day. Observed refs were a contiguous recent block (e.g. 15474–15494).
+- This is the cheap delta hook: one request returns the newest refs, so routine
+  `sync` (mode `whatsNew`, the default) does **not** re-list all 26 A–Z letters.
+  Diff the feed refs against `data/tartans-index.json` and detail-fetch only the
+  unseen ones. Parsed with the same `parseAzListing()` helper as the A–Z pages.
+- A fuller backfill uses mode `az` (re-list letters), capped by `--max` per run
+  so it spreads across scheduled runs rather than one aggressive burst.
+
+## Crawl parallelism note
+
+Detail fetches can run with `concurrency > 1` ("workers"), but `HttpClient`
+spaces request *starts* by `delayMs` regardless — so aggregate rate is bounded
+by the delay, not the worker count. Against this single `.gov.uk` host, keep
+concurrency low (default 2); it is clamped to `MAX_SAFE_CONCURRENCY` (6). Going
+faster means lowering `delayMs`, which is the impolite lever — avoid it.
+
 ## Detail page (`/tartanDetails?ref=14598` and `/tartanDetails?ref=9`)
 
 Confirmed by fetching two real pages: `ref=14598` ("Loch Lomond Whisky",

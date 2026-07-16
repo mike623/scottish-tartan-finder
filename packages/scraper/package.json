@@ -7,6 +7,7 @@
     "discover": "tsx src/cli.ts discover",
     "details": "tsx src/cli.ts details",
     "smoke": "tsx src/cli.ts smoke",
+    "sync": "tsx src/cli.ts sync",
     "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {

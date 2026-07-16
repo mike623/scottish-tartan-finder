@@ -33,6 +33,8 @@ export interface TartanRecord {
   imageUrl: string;
   status: TartanStatus;
   lastIndexedAt: string;
+  /** SHA-256 of the detail HTML at index time; lets incremental sync detect changes. Optional (older records / smoke output may omit it). */
+  sourceHash?: string;
 }
 
 export interface BuildIndexOptions {

@@ -18,8 +18,48 @@ import { AzDiscoveryProvider } from "./discovery/az.js";
 import { fetchDetail } from "./detail/fetch.js";
 import { parse } from "./detail/parser.js";
 import { buildIndex } from "./index-build.js";
+import { syncIndex, type SyncMode } from "./sync.js";
 
 const RATE_LIMIT_DELAY_MS = 2000;
+
+/** Parse `--key value` / `--key=value` flags from argv remainder. */
+function parseFlags(args: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (!a || !a.startsWith("--")) continue;
+    const eq = a.indexOf("=");
+    if (eq !== -1) {
+      out[a.slice(2, eq)] = a.slice(eq + 1);
+      continue;
+    }
+    const key = a.slice(2);
+    const next = args[i + 1];
+    if (next !== undefined && !next.startsWith("--")) {
+      out[key] = next;
+      i += 1;
+    } else {
+      out[key] = "true";
+    }
+  }
+  return out;
+}
+
+async function runSync(args: string[]): Promise<void> {
+  const flags = parseFlags(args);
+  const mode = (flags.mode === "az" ? "az" : "whatsNew") as SyncMode;
+  const summary = await syncIndex({
+    mode,
+    maxNew: flags.max ? Number(flags.max) : undefined,
+    concurrency: flags.concurrency ? Number(flags.concurrency) : undefined,
+    letters: flags.letters ? flags.letters.split(",") : undefined,
+  });
+  console.error(
+    `[sync] mode=${summary.mode} discovered=${summary.discovered} alreadyIndexed=${summary.alreadyIndexed} ` +
+      `fetched=${summary.fetched} deferred=${summary.deferred} added=${summary.added} updated=${summary.updated} ` +
+      `failed=${summary.failed} total=${summary.total}`,
+  );
+}
 
 async function runDiscover(args: string[]): Promise<void> {
   const letters = args.length > 0 ? args : ["A"];
@@ -77,8 +117,12 @@ async function main(): Promise<void> {
     case "smoke":
       await runSmoke();
       break;
+    case "sync":
+      await runSync(rest);
+      break;
     default:
-      console.error("Usage: tsx src/cli.ts <discover|details|smoke> [args]");
+      console.error("Usage: tsx src/cli.ts <discover|details|smoke|sync> [args]");
+      console.error("  sync [--mode whatsNew|az] [--max N] [--concurrency N] [--letters A,B,C]");
       process.exitCode = 1;
   }
 }

@@ -24,6 +24,7 @@ npm test             # runs each workspace's tests (--if-present)
 npm run crawl:smoke      # scraper: one A–Z letter + ref 14598, writes data/tartans-index.json
 npm run crawl:discover   # scraper: discovery only
 npm run crawl:details    # scraper: detail fetch/parse
+npm run crawl:sync -- --mode whatsNew --max 25   # incremental delta sync (upsert)
 npm test -w packages/scraper   # scraper unit tests (node:test, offline fixtures)
 ```
 
@@ -56,6 +57,8 @@ Fetch and parse are separate so the parser is unit-testable against saved HTML (
 - `src/discovery/az.ts` — parses `tartanDetails?ref=` links off A–Z pages (no brute-force ID enumeration).
 - `src/detail/parser.ts` — `parse(ref, html)`, label/value DOM extraction, **no network**.
 - `src/index-build.ts` / `src/cli.ts` — orchestrate discover → dedupe → fetch → parse → write `data/tartans-index.json`.
+- `src/discovery/whatsNew.ts` + `src/sync.ts` — **incremental sync** (the "run regularly" path). `whatsNew` mode is one request to the Register's recent-registrations feed; sync diffs it against the local index and detail-fetches only new/changed refs (`selectToFetch` + `mergeRecords` are pure and unit-tested), upserting by `ref` with a `sourceHash`. Never overwrites/shrinks the index. `--max` caps fetches per run so backfills spread across runs. The scheduled `.github/workflows/crawl.yml` runs this weekly, commits changed data, and redeploys.
+- **Parallel "detail workers" = concurrent detail fetches** governed by `HttpClient` (`concurrency`, default 2, clamped to `MAX_SAFE_CONCURRENCY`). Request *starts* are spaced by `delayMs` regardless of concurrency, so more workers never exceed the polite rate — against this single `.gov.uk` host that's intentional; do not remove it or fan out wide.
 
 **Crawl safety when touching this code:** the target is a live `.gov.uk` site with Crown copyright (reuse permitted with attribution; no scraping prohibition — see `docs/source-investigation.md`). Keep requests small and polite, never remove the rate limiting, keep attribution. `.aspx` URLs 301-redirect to canonical extension-less paths; robots.txt is 404. The POC dataset is intentionally a small sample, not the full ~518+ registry.
 

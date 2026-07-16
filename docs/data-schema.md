@@ -21,6 +21,7 @@ whatever is present.
 | `imageUrl` | string | `imageCreation.aspx` URL (default 750×750). |
 | `status` | string | `DISCOVERED` \| `INDEXED` \| `FAILED` \| `UNAVAILABLE`. Web shows only records with data. |
 | `lastIndexedAt` | string | ISO date (`YYYY-MM-DD`). |
+| `sourceHash` | string? | Optional. SHA-256 of the detail HTML at index time; used by incremental sync for change detection. May be absent on older records / `smoke` output. |
 
 ## Rules
 

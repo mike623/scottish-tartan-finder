@@ -36,11 +36,24 @@ export interface HttpClientOptions {
   delayMs?: number;
   /** Maximum number of attempts per request (initial attempt + retries). */
   maxRetries?: number;
+  /**
+   * Max requests in flight at once ("detail workers"). Default 1.
+   * NOTE: this only overlaps response-wait time — request *starts* are always
+   * spaced by `delayMs`, so raising concurrency never exceeds the polite rate
+   * of 1 request / delayMs. Against a single live .gov.uk host, keep this low.
+   * Clamped to MAX_SAFE_CONCURRENCY.
+   */
+  concurrency?: number;
   /** Structured log sink. Defaults to console.error so stdout stays clean for JSON output. */
   log?: (entry: LogEntry) => void;
 }
 
 export const DEFAULT_USER_AGENT = "TartanIndexer/1.0 (Scottish Tartan Finder POC)";
+
+// ponytail: hard ceiling on parallel detail fetches. The target is a live
+// government site; 30-wide fan-out reads as an attack and the min-delay gate
+// means it wouldn't go faster anyway. Raise this only with deliberate intent.
+export const MAX_SAFE_CONCURRENCY = 6;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
@@ -64,34 +77,73 @@ export class HttpClient {
   private readonly timeoutMs: number;
   private readonly delayMs: number;
   private readonly maxRetries: number;
+  private readonly concurrency: number;
   private readonly log: (entry: LogEntry) => void;
 
-  private queue: Promise<unknown> = Promise.resolve();
-  private lastRequestStartedAt = 0;
+  private active = 0;
+  private readonly pending: Array<() => void> = [];
+  private nextSlot = 0;
 
   constructor(options: HttpClientOptions = {}) {
     this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
     this.timeoutMs = options.timeoutMs ?? 15_000;
     this.delayMs = options.delayMs ?? 2000;
     this.maxRetries = options.maxRetries ?? 3;
+    const requested = options.concurrency ?? 1;
+    this.concurrency = Math.min(Math.max(1, requested), MAX_SAFE_CONCURRENCY);
+    if (requested > this.concurrency) {
+      console.error(
+        `[http] requested concurrency ${requested} clamped to ${this.concurrency} — this is a polite crawler for a live .gov.uk source. Request starts are still spaced by ${this.delayMs}ms regardless of concurrency.`,
+      );
+    }
     this.log = options.log ?? defaultLogger;
   }
 
-  /** GET a URL. Requests are serialized (concurrency 1) and rate limited. */
+  /**
+   * GET a URL. At most `concurrency` requests run at once, and request *starts*
+   * are always spaced by at least `delayMs` (so the aggregate rate is bounded
+   * by the delay, not the worker count).
+   */
   get(url: string): Promise<FetchResult> {
-    const run = this.queue.then(() => this.runWithRetries(url));
-    // Keep the queue alive even if this request ultimately fails, so the
-    // next queued request still runs.
-    this.queue = run.catch(() => undefined);
-    return run;
+    return this.withSlot(() => this.runWithRetries(url));
   }
 
-  private async waitForSlot(): Promise<void> {
-    const elapsed = Date.now() - this.lastRequestStartedAt;
-    const remaining = this.delayMs - elapsed;
-    if (remaining > 0) {
-      await sleep(remaining);
+  private async withSlot<T>(fn: () => Promise<T>): Promise<T> {
+    await this.acquire();
+    try {
+      return await fn();
+    } finally {
+      this.release();
     }
+  }
+
+  private acquire(): Promise<void> {
+    if (this.active < this.concurrency) {
+      this.active += 1;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => this.pending.push(resolve));
+  }
+
+  private release(): void {
+    const next = this.pending.shift();
+    if (next) {
+      next(); // hand this slot straight to the next waiter; active unchanged
+    } else {
+      this.active -= 1;
+    }
+  }
+
+  /**
+   * Reserve the next rate-limited start slot. Reserves synchronously so
+   * concurrent callers get sequential, delayMs-spaced start times.
+   */
+  private async reserveStartSlot(): Promise<void> {
+    const now = Date.now();
+    const start = Math.max(now, this.nextSlot);
+    this.nextSlot = start + this.delayMs;
+    const wait = start - now;
+    if (wait > 0) await sleep(wait);
   }
 
   private async runWithRetries(url: string): Promise<FetchResult> {
@@ -100,8 +152,7 @@ export class HttpClient {
 
     while (attempt < this.maxRetries) {
       attempt += 1;
-      await this.waitForSlot();
-      this.lastRequestStartedAt = Date.now();
+      await this.reserveStartSlot();
       const start = Date.now();
 
       try {
