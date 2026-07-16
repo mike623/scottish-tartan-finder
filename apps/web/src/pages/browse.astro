@@ -15,14 +15,15 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   <div style="max-width:1180px;margin:0 auto;padding:clamp(30px,4cqw,52px) clamp(18px,5cqw,48px) 72px;">
     <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8a7d5f;margin-bottom:10px;">Alphabetical index</div>
     <h1 style="font-size:clamp(2.2rem,5cqw,3.4rem);line-height:1.02;margin-bottom:8px;">Browse A–Z</h1>
-    <p style="color:#6b6455;max-width:56ch;line-height:1.6;margin:0 0 26px;">Every tartan in the catalogue, ordered by name. Jump to a letter or scroll the full list.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;padding:16px;background:#faf6ec;border:1px solid #e4dcc9;border-radius:3px;margin-bottom:34px;">
+    <p style="color:#6b6455;max-width:56ch;line-height:1.6;margin:0 0 26px;">Every tartan in the catalogue, ordered by name. Pick a letter to see just those tartans, or “All” for the full list.</p>
+    <div id="az-bar" style="display:flex;flex-wrap:wrap;gap:6px;padding:16px;background:#faf6ec;border:1px solid #e4dcc9;border-radius:3px;margin-bottom:34px;scroll-margin-top:80px;">
+      <a data-letter="All" class="tf-az is-active" href="?letter=All">All</a>
       {alphabet.map((letter) => {
         const disabled = !counts[letter];
         return disabled ? (
-          <span style="min-width:34px;text-align:center;cursor:default;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;color:#c3b89e;">{letter}</span>
+          <span class="tf-az-disabled">{letter}</span>
         ) : (
-          <a href={`#letter-${letter}`} data-letter={letter} class="tf-az" style="min-width:34px;text-align:center;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;color:#3a3428;text-decoration:none;">{letter}</a>
+          <a data-letter={letter} class="tf-az" href={`?letter=${letter}`}>{letter}</a>
         );
       })}
     </div>
@@ -35,9 +36,13 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       var list = document.getElementById('list');
       var BASE = list.dataset.base;
       var sentinel = document.getElementById('sentinel');
+      var azBar = document.getElementById('az-bar');
+      var navLinks = azBar.querySelectorAll('.tf-az');
       var BATCH = 60;
 
-      var sorted = [];
+      var all = [];      // full list, sorted by name
+      var view = [];     // current letter's slice (or all)
+      var letter = new URLSearchParams(location.search).get('letter') || 'All';
       var pos = 0;
       var curLetter = null;
       var curGrid = null;
@@ -58,57 +63,59 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
           (meta ? '<div style="font-size:13px;color:#6b6455;margin-top:7px;">' + esc(meta) + '</div>' : '') +
           '</div></a>';
       }
-      function startLetter(letter) {
+      function startLetter(l) {
         var block = document.createElement('div');
-        block.id = 'letter-' + letter;
-        block.style.cssText = 'margin-bottom:38px;scroll-margin-top:90px;';
+        block.style.cssText = 'margin-bottom:38px;';
         block.innerHTML = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">' +
-          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:2.4rem;font-weight:700;color:#2f5140;line-height:1;">' + letter + '</div>' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:2.4rem;font-weight:700;color:#2f5140;line-height:1;">' + l + '</div>' +
           '<div style="flex:1;height:1px;background:#e0d7c3;"></div></div>';
         var grid = document.createElement('div');
         grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;';
         block.appendChild(grid);
         list.appendChild(block);
-        curLetter = letter;
+        curLetter = l;
         curGrid = grid;
       }
       function renderMore() {
-        if (pos >= sorted.length) return;
-        var end = Math.min(pos + BATCH, sorted.length);
+        if (pos >= view.length) return;
+        var end = Math.min(pos + BATCH, view.length);
         for (; pos < end; pos++) {
-          var t = sorted[pos];
+          var t = view[pos];
           var l = t.n.charAt(0).toUpperCase();
           if (l !== curLetter) startLetter(l);
           curGrid.insertAdjacentHTML('beforeend', cardHTML(t));
         }
       }
-      // Render forward until a letter block exists (for jump nav), capped.
-      function renderUntilLetter(letter) {
-        var guard = 0;
-        while (!document.getElementById('letter-' + letter) && pos < sorted.length && guard < 400) {
-          renderMore();
-          guard++;
+      function show(target, scroll) {
+        letter = target;
+        for (var i = 0; i < navLinks.length; i++) {
+          navLinks[i].classList.toggle('is-active', navLinks[i].dataset.letter === letter);
         }
+        view = letter === 'All' ? all : all.filter(function (t) { return t.n.charAt(0).toUpperCase() === letter; });
+        list.innerHTML = '';
+        pos = 0; curLetter = null; curGrid = null;
+        renderMore();
+        var url = new URL(location.href);
+        if (letter === 'All') url.searchParams.delete('letter'); else url.searchParams.set('letter', letter);
+        history.replaceState({}, '', url);
+        if (scroll) azBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
       var io = new IntersectionObserver(function (e) { if (e[0].isIntersecting) renderMore(); }, { rootMargin: '800px 0px' });
       io.observe(sentinel);
 
-      document.querySelectorAll('.tf-az').forEach(function (a) {
-        a.addEventListener('click', function (ev) {
+      for (var i = 0; i < navLinks.length; i++) {
+        navLinks[i].addEventListener('click', function (ev) {
           ev.preventDefault();
-          var letter = a.dataset.letter;
-          renderUntilLetter(letter);
-          var el = document.getElementById('letter-' + letter);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          show(this.dataset.letter, true);
         });
-      });
+      }
 
       fetch(BASE + 'tartans-lite.json')
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          sorted = data.sort(function (a, b) { return a.n.localeCompare(b.n); });
-          renderMore();
+          all = data.sort(function (a, b) { return a.n.localeCompare(b.n); });
+          show(letter, false);
         });
     })();
   </script>
