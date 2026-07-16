@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro check && astro build",
-    "preview": "astro preview"
-  },
-  "dependencies": {
-    "@astrojs/check": "latest",
-    "astro": "latest",
-    "typescript": "latest"
-  },
-  "devDependencies": {}
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "preview": "npm run preview -w apps/web",
+    "crawl:discover": "npm run discover -w packages/scraper",
+    "crawl:details": "npm run details -w packages/scraper",
+    "crawl:smoke": "npm run smoke -w packages/scraper",
+    "test": "npm test --workspaces --if-present"
+  }
 }

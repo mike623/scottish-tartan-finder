@@ -24,11 +24,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - run: npm run build   # builds apps/web from committed data/tartans-index.json (no live crawl in CI)
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./apps/web/dist
   deploy:
     environment:
       name: github-pages
