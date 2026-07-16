@@ -36,7 +36,7 @@ const rows: Array<[string, string]> = [
   image={imageSrc(tartan, 750)}
 >
   <div style="max-width:1180px;margin:0 auto;padding:clamp(24px,3cqw,40px) clamp(18px,5cqw,48px) 72px;">
-    <a href={`${base}search`} style="display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:#6b6455;cursor:pointer;margin-bottom:26px;text-decoration:none;">← Back to search</a>
+    <a href={`${base}search`} onclick="if(document.referrer){try{if(new URL(document.referrer).pathname.replace(/\/$/,'').endsWith('/search')){history.back();return false;}}catch(e){}}" style="display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:#6b6455;cursor:pointer;margin-bottom:26px;text-decoration:none;">← Back to search</a>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(28px,4cqw,48px);align-items:start;">
       <div>
         <div id="tf-image-frame" style="aspect-ratio:1/1;background:#e9e1cf;background-image:repeating-linear-gradient(135deg,#e0d6ba 0 9px,#ece5d3 9px 19px);border:1px solid #e4dcc9;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;overflow:hidden;">
