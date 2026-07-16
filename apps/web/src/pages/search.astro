@@ -1,0 +1,137 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TartanCard from '../components/TartanCard.astro';
+import { tartans, categoryCounts } from '../lib/tartans';
+
+const counts = categoryCounts();
+const categories = Object.keys(counts).sort();
+const sorted = [...tartans].sort((a, b) => a.name.localeCompare(b.name));
+---
+
+<Layout title="Search — Scottish Tartan Finder" active="search">
+  <div style="max-width:1180px;margin:0 auto;padding:clamp(30px,4cqw,52px) clamp(18px,5cqw,48px) 72px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8a7d5f;margin-bottom:10px;">Search the catalogue</div>
+    <h1 style="font-size:clamp(2.2rem,5cqw,3.4rem);line-height:1.02;margin-bottom:22px;">Find a tartan</h1>
+    <div style="display:flex;background:#fbf8f1;border:1px solid #d8cdb4;border-radius:2px;overflow:hidden;max-width:640px;">
+      <input id="q" placeholder="Search by name, clan, district or reference…" style="flex:1;border:none;outline:none;background:transparent;padding:15px 18px;font-size:16px;color:#211d16;" />
+      <div style="display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7d5f;border-left:1px solid #e4dcc9;">↵</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:26px 0 8px;padding-bottom:18px;border-bottom:1px solid #e0d7c3;">
+      <div id="chips" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="tf-chip is-active" data-cat="All">All</span>
+        {categories.map((c) => <span class="tf-chip" data-cat={c}>{c}</span>)}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#8a7d5f;text-transform:uppercase;">Sort</span>
+        <select id="sort" style="border:1px solid #d8cdb4;background:#fbf8f1;padding:9px 12px;font-size:14px;color:#211d16;border-radius:2px;cursor:pointer;">
+          <option value="name">Name A–Z</option>
+          <option value="ref">Reference ID</option>
+          <option value="cat">Category</option>
+        </select>
+      </div>
+    </div>
+    <div id="count-label" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6b6455;margin:14px 0 22px;">{sorted.length} tartans</div>
+    <div id="results" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;">
+      {sorted.map((t) => <TartanCard tartan={t} cta />)}
+    </div>
+    <div id="empty-state" style="display:none;text-align:center;padding:64px 24px;border:1px dashed #d3c8ae;border-radius:4px;background:#faf6ec;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#8a7d5f;">No matches</div>
+      <h3 style="font-size:1.9rem;margin:12px 0 8px;">Nothing found for that search</h3>
+      <p style="color:#6b6455;max-width:44ch;margin:0 auto 22px;line-height:1.6;">Try a shorter term, a clan or district name, or clear the filters to see the full catalogue.</p>
+      <button id="clear-filters" type="button" style="background:#2f5140;color:#f6f1e7;border:none;padding:12px 24px;font-weight:600;font-size:14px;cursor:pointer;border-radius:2px;">Clear search &amp; filters</button>
+    </div>
+  </div>
+  <script is:inline>
+    (function () {
+      var qInput = document.getElementById('q');
+      var chipsWrap = document.getElementById('chips');
+      var sortSelect = document.getElementById('sort');
+      var resultsGrid = document.getElementById('results');
+      var emptyState = document.getElementById('empty-state');
+      var countLabel = document.getElementById('count-label');
+      var clearBtn = document.getElementById('clear-filters');
+      var cards = Array.prototype.slice.call(resultsGrid.querySelectorAll('.tf-card'));
+
+      var params = new URLSearchParams(window.location.search);
+      var state = {
+        query: params.get('q') || '',
+        cat: params.get('cat') || 'All',
+        sort: 'name',
+      };
+      qInput.value = state.query;
+
+      function setActiveChip() {
+        Array.prototype.forEach.call(chipsWrap.querySelectorAll('.tf-chip'), function (chip) {
+          chip.classList.toggle('is-active', chip.dataset.cat === state.cat);
+        });
+      }
+
+      function applySort() {
+        var sorted = cards.slice().sort(function (a, b) {
+          if (state.sort === 'ref') return Number(a.dataset.ref) - Number(b.dataset.ref);
+          if (state.sort === 'cat') {
+            var c = (a.dataset.categoryLc || '').localeCompare(b.dataset.categoryLc || '');
+            return c !== 0 ? c : a.dataset.name.localeCompare(b.dataset.name);
+          }
+          return a.dataset.name.localeCompare(b.dataset.name);
+        });
+        sorted.forEach(function (el) { resultsGrid.appendChild(el); });
+      }
+
+      function render() {
+        var q = state.query.trim().toLowerCase();
+        var visibleCount = 0;
+        cards.forEach(function (card) {
+          var okQ = !q
+            || card.dataset.name.indexOf(q) !== -1
+            || String(card.dataset.ref).indexOf(q) !== -1
+            || (card.dataset.designer || '').indexOf(q) !== -1
+            || (card.dataset.categoryLc || '').indexOf(q) !== -1;
+          var okC = state.cat === 'All' || card.dataset.category === state.cat;
+          var visible = okQ && okC;
+          card.classList.toggle('is-hidden', !visible);
+          if (visible) visibleCount += 1;
+        });
+        applySort();
+        setActiveChip();
+
+        var label = visibleCount + (visibleCount === 1 ? ' tartan' : ' tartans');
+        if (state.cat !== 'All') label += ' in ' + state.cat;
+        if (q) label += ' matching “' + state.query.trim() + '”';
+        countLabel.textContent = label;
+
+        var showEmpty = visibleCount === 0;
+        resultsGrid.style.display = showEmpty ? 'none' : 'grid';
+        emptyState.style.display = showEmpty ? 'block' : 'none';
+
+        var url = new URL(window.location.href);
+        if (state.query) url.searchParams.set('q', state.query); else url.searchParams.delete('q');
+        if (state.cat !== 'All') url.searchParams.set('cat', state.cat); else url.searchParams.delete('cat');
+        window.history.replaceState({}, '', url);
+      }
+
+      qInput.addEventListener('input', function (e) {
+        state.query = e.target.value;
+        render();
+      });
+      sortSelect.addEventListener('change', function (e) {
+        state.sort = e.target.value;
+        render();
+      });
+      chipsWrap.addEventListener('click', function (e) {
+        var chip = e.target.closest('.tf-chip');
+        if (!chip) return;
+        state.cat = chip.dataset.cat;
+        render();
+      });
+      clearBtn.addEventListener('click', function () {
+        state.query = '';
+        state.cat = 'All';
+        qInput.value = '';
+        render();
+      });
+
+      render();
+    })();
+  </script>
+</Layout>

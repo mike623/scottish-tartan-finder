@@ -1,0 +1,21 @@
+{
+  "name": "@scottish-tartan-finder/scraper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "discover": "tsx src/cli.ts discover",
+    "details": "tsx src/cli.ts details",
+    "smoke": "tsx src/cli.ts smoke",
+    "sync": "tsx src/cli.ts sync",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}

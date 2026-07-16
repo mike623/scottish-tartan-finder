@@ -1,0 +1,50 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TartanCard from '../components/TartanCard.astro';
+import { tartans, letterOf } from '../lib/tartans';
+
+const counts: Record<string, number> = {};
+for (const t of tartans) {
+  const l = letterOf(t);
+  counts[l] = (counts[l] || 0) + 1;
+}
+
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const letters = [...new Set(tartans.map(letterOf))].sort();
+
+const groups = letters.map((letter) => ({
+  letter,
+  items: tartans
+    .filter((t) => letterOf(t) === letter)
+    .sort((a, b) => a.name.localeCompare(b.name)),
+}));
+---
+
+<Layout title="Browse A–Z — Scottish Tartan Finder" active="browse">
+  <div style="max-width:1180px;margin:0 auto;padding:clamp(30px,4cqw,52px) clamp(18px,5cqw,48px) 72px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8a7d5f;margin-bottom:10px;">Alphabetical index</div>
+    <h1 style="font-size:clamp(2.2rem,5cqw,3.4rem);line-height:1.02;margin-bottom:8px;">Browse A–Z</h1>
+    <p style="color:#6b6455;max-width:56ch;line-height:1.6;margin:0 0 26px;">Every tartan in the catalogue, ordered by name. Jump to a letter or scroll the full list.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;padding:16px;background:#faf6ec;border:1px solid #e4dcc9;border-radius:3px;margin-bottom:34px;">
+      {alphabet.map((letter) => {
+        const disabled = !counts[letter];
+        return disabled ? (
+          <span style="min-width:34px;text-align:center;cursor:default;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;background:transparent;color:#c3b89e;border:1px solid transparent;">{letter}</span>
+        ) : (
+          <a href={`#letter-${letter}`} style="min-width:34px;text-align:center;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;background:transparent;color:#3a3428;border:1px solid transparent;text-decoration:none;">{letter}</a>
+        );
+      })}
+    </div>
+    {groups.map((group) => (
+      <div id={`letter-${group.letter}`} style="margin-bottom:38px;scroll-margin-top:90px;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:#2f5140;line-height:1;">{group.letter}</div>
+          <div style="flex:1;height:1px;background:#e0d7c3;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;">
+          {group.items.map((t) => <TartanCard tartan={t} />)}
+        </div>
+      </div>
+    ))}
+  </div>
+</Layout>

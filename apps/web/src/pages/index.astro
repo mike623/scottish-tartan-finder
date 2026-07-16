@@ -1,0 +1,61 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TartanCard from '../components/TartanCard.astro';
+import { tartans, recentlyAdded } from '../lib/tartans';
+import { base } from '../lib/base';
+
+const recent = recentlyAdded(3);
+
+const steps: Array<[string, string, string, string]> = [
+  ['01', '#6d2532', 'Search plainly', 'Type a name, clan, district or reference number. Results filter as you go — no accounts, no clutter.'],
+  ['02', '#2f5140', 'Read the record', 'Each tartan shows category, designer, dates and any restrictions — with a clear link to the official Register entry.'],
+  ['03', '#a67c2e', 'Always attributed', 'This is an independent reference. Every record credits its source, and we never present ourselves as official.'],
+];
+---
+
+<Layout title="Scottish Tartan Finder">
+  <div>
+    <section style="position:relative;background:radial-gradient(130% 100% at 50% -10%,#3b424a 0%,#242a30 45%,#171b20 100%);color:#ece4d3;overflow:hidden;">
+      <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.028) 0 2px,transparent 2px 24px);pointer-events:none;"></div>
+      <div style="max-width:1180px;margin:0 auto;padding:clamp(48px,9cqw,104px) clamp(18px,5cqw,48px) clamp(40px,7cqw,80px);position:relative;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#c9b98a;margin-bottom:22px;">Search · Browse · Understand</div>
+        <h1 style="font-size:clamp(2.9rem,9.5cqw,7.2rem);line-height:.94;font-weight:600;letter-spacing:-.01em;margin:0;max-width:14ch;">The tartans of Scotland, in one place.</h1>
+        <p style="max-width:56ch;margin:26px 0 0;font-size:clamp(15px,1.6cqw,18px);line-height:1.6;color:#cfc7b6;">A calm, readable catalogue for exploring Scottish tartans — search by name, clan, district or reference, and read the record behind each design. Built from public data attributed to the Scottish Register of Tartans.</p>
+        <div style="margin-top:34px;max-width:640px;">
+          <form action={`${base}search`} method="get" style="display:flex;background:#f6f1e7;border:1px solid #d8cdb4;border-radius:2px;overflow:hidden;box-shadow:0 18px 40px -24px rgba(0,0,0,.6);">
+            <input name="q" placeholder='Search tartans — e.g. "MacLeod", "district", ref 4200' style="flex:1;border:none;outline:none;background:transparent;padding:17px 20px;font-size:16px;color:#211d16;" />
+            <button type="submit" style="border:none;background:#2f5140;color:#f6f1e7;padding:0 26px;font-weight:600;font-size:15px;letter-spacing:.02em;cursor:pointer;">Search</button>
+          </form>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+            <a href={`${base}browse`} style="background:rgba(246,241,231,.08);border:1px solid rgba(236,228,211,.32);color:#ece4d3;padding:11px 20px;font-size:14px;font-weight:500;cursor:pointer;border-radius:2px;text-decoration:none;display:inline-block;">Browse A–Z</a>
+            <a href={`${base}categories`} style="background:rgba(246,241,231,.08);border:1px solid rgba(236,228,211,.32);color:#ece4d3;padding:11px 20px;font-size:14px;font-weight:500;cursor:pointer;border-radius:2px;text-decoration:none;display:inline-block;">Browse by category</a>
+          </div>
+        </div>
+        <p style="margin:30px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;color:rgba(236,228,211,.55);max-width:60ch;line-height:1.7;">Unofficial project — not affiliated with the Scottish Register of Tartans. Records attributed to the official Register.</p>
+      </div>
+    </section>
+    <section style="max-width:1180px;margin:0 auto;padding:clamp(44px,6cqw,72px) clamp(18px,5cqw,48px);">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:26px;">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8a7d5f;margin-bottom:8px;">Newly discovered</div>
+          <h2 style="font-size:clamp(1.9rem,3.6cqw,2.7rem);line-height:1.05;">Recently added to the catalogue</h2>
+        </div>
+        <a href={`${base}browse`} style="font-size:14px;font-weight:600;color:#2f5140;cursor:pointer;white-space:nowrap;text-decoration:none;">See all {tartans.length} tartans →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;">
+        {recent.map((t) => <TartanCard tartan={t} />)}
+      </div>
+    </section>
+    <section style="border-top:1px solid #e0d7c3;background:#efe8db;">
+      <div style="max-width:1180px;margin:0 auto;padding:clamp(40px,5cqw,60px) clamp(18px,5cqw,48px);display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:34px;">
+        {steps.map(([n, color, h, p]) => (
+          <div>
+            <div style={`font-family:'IBM Plex Mono',monospace;font-size:26px;color:${color};`}>{n}</div>
+            <h3 style="font-size:1.55rem;margin:8px 0 8px;">{h}</h3>
+            <p style="font-size:15px;line-height:1.6;color:#5c5647;margin:0;">{p}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  </div>
+</Layout>
