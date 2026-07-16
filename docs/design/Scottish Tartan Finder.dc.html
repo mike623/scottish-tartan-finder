@@ -262,7 +262,7 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(28px,4cqw,48px);align-items:start;">
 
         <div>
-          <div style="aspect-ratio:1/1;background:#e9e1cf;background-image:repeating-linear-gradient(135deg,#e0d6ba 0 9px,#ece5d3 9px 19px);border:1px solid #e4dcc9;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;">
+          <div style="{{detailImgStyle}}">
             <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;color:#8a7d5f;background:rgba(251,248,241,.9);padding:6px 12px;border:1px solid #ded3ba;">tartan pattern preview</span>
             <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#a89b7c;">image not yet available</span>
           </div>
@@ -291,27 +291,27 @@
           </sc-if>
 
           <dl style="margin:0;border-top:1px solid #e0d7c3;">
-            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:16px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
               <dt style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a7d5f;">Reference ID</dt>
               <dd style="margin:0;font-size:15px;color:#211d16;">{{detail.ref}}</dd>
             </div>
-            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:16px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
               <dt style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a7d5f;">Category</dt>
               <dd style="margin:0;font-size:15px;color:#211d16;">{{detail.cat}}</dd>
             </div>
-            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:16px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
               <dt style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a7d5f;">Designer</dt>
               <dd style="margin:0;font-size:15px;color:#211d16;">{{detail.designerText}}</dd>
             </div>
-            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:16px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
               <dt style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a7d5f;">Tartan date</dt>
               <dd style="margin:0;font-size:15px;color:#211d16;">{{detail.tartanDateText}}</dd>
             </div>
-            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:16px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
               <dt style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a7d5f;">Registration date</dt>
               <dd style="margin:0;font-size:15px;color:#211d16;">{{detail.regDateText}}</dd>
             </div>
-            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:16px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:15px 0;border-bottom:1px solid #e0d7c3;">
               <dt style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a7d5f;">Notes</dt>
               <dd style="margin:0;font-size:15px;line-height:1.6;color:#211d16;">{{detail.notesText}}</dd>
             </div>
@@ -821,7 +821,13 @@ class Component extends DCLogic {
     ];
     const nearestWeakStyle = confStyle('weak');
 
+    const detailImgStyle = (mobile
+      ? 'aspect-ratio:16/9;'
+      : 'aspect-ratio:1/1;') +
+      'background:#e9e1cf;background-image:repeating-linear-gradient(135deg,#e0d6ba 0 9px,#ece5d3 9px 19px);border:1px solid #e4dcc9;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;';
+
     return {
+      detailImgStyle,
       githubUrl:'https://github.com/scottish-tartan-finder/catalogue',
       isHome:S.page==='home', isResults:S.page==='results', isBrowse:S.page==='browse',
       isCats:S.page==='categories', isDetail:S.page==='detail', isAbout:S.page==='about',
