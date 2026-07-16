@@ -1,23 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import TartanCard from '../components/TartanCard.astro';
 import { tartans, letterOf } from '../lib/tartans';
+import { base } from '../lib/base';
 
 const counts: Record<string, number> = {};
 for (const t of tartans) {
   const l = letterOf(t);
   counts[l] = (counts[l] || 0) + 1;
 }
-
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-const letters = [...new Set(tartans.map(letterOf))].sort();
-
-const groups = letters.map((letter) => ({
-  letter,
-  items: tartans
-    .filter((t) => letterOf(t) === letter)
-    .sort((a, b) => a.name.localeCompare(b.name)),
-}));
 ---
 
 <Layout title="Browse A–Z — Scottish Tartan Finder" active="browse">
@@ -29,22 +20,96 @@ const groups = letters.map((letter) => ({
       {alphabet.map((letter) => {
         const disabled = !counts[letter];
         return disabled ? (
-          <span style="min-width:34px;text-align:center;cursor:default;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;background:transparent;color:#c3b89e;border:1px solid transparent;">{letter}</span>
+          <span style="min-width:34px;text-align:center;cursor:default;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;color:#c3b89e;">{letter}</span>
         ) : (
-          <a href={`#letter-${letter}`} style="min-width:34px;text-align:center;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;background:transparent;color:#3a3428;border:1px solid transparent;text-decoration:none;">{letter}</a>
+          <a href={`#letter-${letter}`} data-letter={letter} class="tf-az" style="min-width:34px;text-align:center;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;color:#3a3428;text-decoration:none;">{letter}</a>
         );
       })}
     </div>
-    {groups.map((group) => (
-      <div id={`letter-${group.letter}`} style="margin-bottom:38px;scroll-margin-top:90px;">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
-          <div style="font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:#2f5140;line-height:1;">{group.letter}</div>
-          <div style="flex:1;height:1px;background:#e0d7c3;"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;">
-          {group.items.map((t) => <TartanCard tartan={t} />)}
-        </div>
-      </div>
-    ))}
+    <div id="list" data-base={base}></div>
+    <div id="sentinel" style="height:1px;"></div>
   </div>
+
+  <script is:inline>
+    (function () {
+      var list = document.getElementById('list');
+      var BASE = list.dataset.base;
+      var sentinel = document.getElementById('sentinel');
+      var BATCH = 60;
+
+      var sorted = [];
+      var pos = 0;
+      var curLetter = null;
+      var curGrid = null;
+
+      function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      function cardHTML(t) {
+        var img = 'https://www.tartanregister.gov.uk/imageCreation?height=500&ref=' + t.r + '&width=500';
+        var meta = [t.d, t.y].filter(Boolean).join(' · ');
+        return '<a class="tf-card" href="' + BASE + 'tartan/' + t.r + '">' +
+          '<div class="tf-prev"><span class="tf-prev-label">tartan preview</span>' +
+          '<img src="' + img + '" alt="' + esc(t.n) + ' tartan pattern" loading="lazy" decoding="async" onerror="this.remove()"></div>' +
+          '<div style="padding:15px 16px 18px;">' +
+          '<span class="tf-badge">' + esc(t.c) + '</span>' +
+          '<h3 style="font-size:1.55rem;line-height:1.08;margin:11px 0 5px;">' + esc(t.n) + '</h3>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;color:#8a7d5f;">Ref ' + t.r + '</div>' +
+          (meta ? '<div style="font-size:13px;color:#6b6455;margin-top:7px;">' + esc(meta) + '</div>' : '') +
+          '</div></a>';
+      }
+      function startLetter(letter) {
+        var block = document.createElement('div');
+        block.id = 'letter-' + letter;
+        block.style.cssText = 'margin-bottom:38px;scroll-margin-top:90px;';
+        block.innerHTML = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">' +
+          '<div style="font-family:\'Cormorant Garamond\',serif;font-size:2.4rem;font-weight:700;color:#2f5140;line-height:1;">' + letter + '</div>' +
+          '<div style="flex:1;height:1px;background:#e0d7c3;"></div></div>';
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;';
+        block.appendChild(grid);
+        list.appendChild(block);
+        curLetter = letter;
+        curGrid = grid;
+      }
+      function renderMore() {
+        if (pos >= sorted.length) return;
+        var end = Math.min(pos + BATCH, sorted.length);
+        for (; pos < end; pos++) {
+          var t = sorted[pos];
+          var l = t.n.charAt(0).toUpperCase();
+          if (l !== curLetter) startLetter(l);
+          curGrid.insertAdjacentHTML('beforeend', cardHTML(t));
+        }
+      }
+      // Render forward until a letter block exists (for jump nav), capped.
+      function renderUntilLetter(letter) {
+        var guard = 0;
+        while (!document.getElementById('letter-' + letter) && pos < sorted.length && guard < 400) {
+          renderMore();
+          guard++;
+        }
+      }
+
+      var io = new IntersectionObserver(function (e) { if (e[0].isIntersecting) renderMore(); }, { rootMargin: '800px 0px' });
+      io.observe(sentinel);
+
+      document.querySelectorAll('.tf-az').forEach(function (a) {
+        a.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          var letter = a.dataset.letter;
+          renderUntilLetter(letter);
+          var el = document.getElementById('letter-' + letter);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+
+      fetch(BASE + 'tartans-lite.json')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          sorted = data.sort(function (a, b) { return a.n.localeCompare(b.n); });
+          renderMore();
+        });
+    })();
+  </script>
 </Layout>
