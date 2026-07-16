@@ -13,7 +13,7 @@ const total = Object.values(counts).reduce((a, b) => a + b, 0);
     <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8a7d5f;margin-bottom:10px;">Search the catalogue</div>
     <h1 style="font-size:clamp(2.2rem,5cqw,3.4rem);line-height:1.02;margin-bottom:22px;">Find a tartan</h1>
     <div style="display:flex;background:#fbf8f1;border:1px solid #d8cdb4;border-radius:2px;overflow:hidden;max-width:640px;">
-      <input id="q" placeholder="Search by name, clan, district or reference…" style="flex:1;border:none;outline:none;background:transparent;padding:15px 18px;font-size:16px;color:#211d16;" />
+      <input id="q" placeholder="Search name, designer, notes, district or reference…" style="flex:1;border:none;outline:none;background:transparent;padding:15px 18px;font-size:16px;color:#211d16;" />
       <div style="display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7d5f;border-left:1px solid #e4dcc9;">↵</div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:26px 0 8px;padding-bottom:18px;border-bottom:1px solid #e0d7c3;">
@@ -87,7 +87,8 @@ const total = Object.values(counts).reduce((a, b) => a + b, 0);
           if (!okC) return false;
           if (!q) return true;
           return t.n.toLowerCase().indexOf(q) !== -1 || String(t.r).indexOf(q) !== -1 ||
-            (t.d || '').toLowerCase().indexOf(q) !== -1 || t.c.toLowerCase().indexOf(q) !== -1;
+            (t.d || '').toLowerCase().indexOf(q) !== -1 || t.c.toLowerCase().indexOf(q) !== -1 ||
+            (t.o || '').toLowerCase().indexOf(q) !== -1;
         });
         if (state.sort === 'ref') filtered.sort(function (a, b) { return a.r - b.r; });
         else if (state.sort === 'cat') filtered.sort(function (a, b) { return a.c.localeCompare(b.c) || a.n.localeCompare(b.n); });
@@ -142,7 +143,7 @@ const total = Object.values(counts).reduce((a, b) => a + b, 0);
         state.q = ''; state.cat = 'All'; qInput.value = ''; setChips(); applyFilter();
       });
 
-      fetch(BASE + 'tartans-lite.json')
+      fetch(BASE + 'tartans-search.json')
         .then(function (r) { return r.json(); })
         .then(function (data) { all = data; setChips(); applyFilter(); })
         .catch(function () { countLabel.textContent = 'Could not load the catalogue.'; });
