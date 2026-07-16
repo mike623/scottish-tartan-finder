@@ -101,8 +101,21 @@ const navItems: Array<{ key: 'search' | 'browse' | 'categories' | 'identify' | '
         </div>
       </footer>
     </div>
+    <button id="tf-to-top" type="button" aria-label="Scroll to top" title="Back to top" style="position:fixed;right:clamp(14px,3vw,28px);bottom:clamp(14px,3vw,28px);z-index:60;width:46px;height:46px;border-radius:3px;border:1px solid #2f5140;background:#2f5140;color:#f6f1e7;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:19px;line-height:1;box-shadow:0 10px 24px -12px rgba(20,18,14,.6);">↑</button>
     <script is:inline>
       (function () {
+        var toTop = document.getElementById('tf-to-top');
+        if (toTop) {
+          var onScroll = function () {
+            toTop.style.display = window.scrollY > 400 ? 'flex' : 'none';
+          };
+          window.addEventListener('scroll', onScroll, { passive: true });
+          onScroll();
+          toTop.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+
         var burger = document.getElementById('tf-burger');
         var menu = document.getElementById('tf-mobile-menu');
         if (!burger || !menu) return;
