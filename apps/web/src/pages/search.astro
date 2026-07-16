@@ -66,7 +66,7 @@ const total = Object.values(counts).reduce((a, b) => a + b, 0);
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
       function cardHTML(t) {
-        var img = 'https://www.tartanregister.gov.uk/imageCreation?height=500&ref=' + t.r + '&width=500';
+        var img = 'https://www.tartanregister.gov.uk/imageCreation?height=360&ref=' + t.r + '&width=360';
         var meta = [t.d, t.y].filter(Boolean).join(' · ');
         return '<a class="tf-card" href="' + BASE + 'tartan/' + t.r + '">' +
           '<div class="tf-prev"><span class="tf-prev-label">tartan preview</span>' +
