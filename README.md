@@ -14,9 +14,17 @@ A calm, fast, static catalogue for searching and browsing **every tartan in the 
 - **Full catalogue** — all 10,822 public tartans, each with its own static page (metadata, restrictions, official image, source link).
 - **Fuzzy search** — typo-tolerant, relevance-ranked (Fuse.js) over name, designer, category and registration notes. Runs entirely in your browser.
 - **Fast at scale** — search and browse render client-side from a compact index with infinite scroll, so the pages stay ~24 KB instead of 16 MB.
-- **Browse A–Z and by category**, with jump-to-letter navigation.
+- **Browse A–Z and by category**, with quick letter navigation.
 - **Identify from a photo** — an on-device (privacy-preserving) photo-match page. The matcher itself is still in design; the flow is a preview.
 - **Self-updating** — a scheduled crawler picks up newly registered tartans and redeploys automatically.
+
+## Screenshots
+
+| Fuzzy search | Tartan detail |
+| :---: | :---: |
+| [![Search](docs/assets/search.png)](https://mike623.github.io/scottish-tartan-finder/search/) | [![Tartan detail](docs/assets/detail.png)](https://mike623.github.io/scottish-tartan-finder/tartan/14598/) |
+| **Browse by category** | **Identify from a photo** |
+| [![Categories](docs/assets/categories.png)](https://mike623.github.io/scottish-tartan-finder/categories/) | [![Identify](docs/assets/identify.png)](https://mike623.github.io/scottish-tartan-finder/identify/) |
 
 ## How it works
 
