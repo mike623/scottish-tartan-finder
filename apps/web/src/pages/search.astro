@@ -41,112 +41,139 @@ const total = Object.values(counts).reduce((a, b) => a + b, 0);
     </div>
   </div>
 
-  <script is:inline>
-    (function () {
-      var grid = document.getElementById('results');
-      var BASE = grid.dataset.base;
-      var qInput = document.getElementById('q');
-      var chipsWrap = document.getElementById('chips');
-      var sortSelect = document.getElementById('sort');
-      var countLabel = document.getElementById('count-label');
-      var emptyState = document.getElementById('empty-state');
-      var sentinel = document.getElementById('sentinel');
-      var clearBtn = document.getElementById('clear-filters');
-      var BATCH = 48;
+  <script>
+    import Fuse from 'fuse.js';
 
-      var params = new URLSearchParams(location.search);
-      var state = { q: params.get('q') || '', cat: params.get('cat') || 'All', sort: 'name' };
-      qInput.value = state.q;
+    interface T { r: number; n: string; c: string; d: string; y: string; o: string; }
 
-      var all = [];
-      var filtered = [];
-      var shown = 0;
+    const grid = document.getElementById('results') as HTMLDivElement;
+    const BASE = (grid.dataset.base ?? '/') as string;
+    const qInput = document.getElementById('q') as HTMLInputElement;
+    const chipsWrap = document.getElementById('chips') as HTMLDivElement;
+    const sortSelect = document.getElementById('sort') as HTMLSelectElement;
+    const countLabel = document.getElementById('count-label') as HTMLDivElement;
+    const emptyState = document.getElementById('empty-state') as HTMLDivElement;
+    const sentinel = document.getElementById('sentinel') as HTMLDivElement;
+    const clearBtn = document.getElementById('clear-filters') as HTMLButtonElement;
+    const BATCH = 48;
 
-      function esc(s) {
-        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const params = new URLSearchParams(location.search);
+    const state = { q: params.get('q') ?? '', cat: params.get('cat') ?? 'All', sort: 'name' };
+    qInput.value = state.q;
+
+    let all: T[] = [];
+    let fuse: Fuse<T> | null = null;
+    let filtered: T[] = [];
+    let shown = 0;
+
+    const esc = (s: string) =>
+      String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    function cardHTML(t: T): string {
+      const img = 'https://www.tartanregister.gov.uk/imageCreation?height=360&ref=' + t.r + '&width=360';
+      const meta = [t.d, t.y].filter(Boolean).join(' · ');
+      return '<a class="tf-card" href="' + BASE + 'tartan/' + t.r + '">' +
+        '<div class="tf-prev"><span class="tf-prev-label">tartan preview</span>' +
+        '<img src="' + img + '" alt="' + esc(t.n) + ' tartan pattern" loading="lazy" decoding="async" onerror="this.remove()"></div>' +
+        '<div style="padding:15px 16px 18px;">' +
+        '<span class="tf-badge">' + esc(t.c) + '</span>' +
+        '<h3 style="font-size:1.55rem;line-height:1.08;margin:11px 0 5px;">' + esc(t.n) + '</h3>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;color:#8a7d5f;">Ref ' + t.r + '</div>' +
+        (meta ? '<div style="font-size:13px;color:#6b6455;margin-top:7px;">' + esc(meta) + '</div>' : '') +
+        '<div style="margin-top:13px;font-size:13px;font-weight:600;color:#2f5140;">View details →</div>' +
+        '</div></a>';
+    }
+
+    function compute(): T[] {
+      const q = state.q.trim();
+      const byCat = (list: T[]) => (state.cat === 'All' ? list : list.filter((t) => t.c === state.cat));
+
+      // No query: full (category) list in the chosen sort order.
+      if (!q) {
+        const list = byCat(all).slice();
+        if (state.sort === 'ref') list.sort((a, b) => a.r - b.r);
+        else if (state.sort === 'cat') list.sort((a, b) => a.c.localeCompare(b.c) || a.n.localeCompare(b.n));
+        else list.sort((a, b) => a.n.localeCompare(b.n));
+        return list;
       }
-      function cardHTML(t) {
-        var img = 'https://www.tartanregister.gov.uk/imageCreation?height=360&ref=' + t.r + '&width=360';
-        var meta = [t.d, t.y].filter(Boolean).join(' · ');
-        return '<a class="tf-card" href="' + BASE + 'tartan/' + t.r + '">' +
-          '<div class="tf-prev"><span class="tf-prev-label">tartan preview</span>' +
-          '<img src="' + img + '" alt="' + esc(t.n) + ' tartan pattern" loading="lazy" decoding="async" onerror="this.remove()"></div>' +
-          '<div style="padding:15px 16px 18px;">' +
-          '<span class="tf-badge">' + esc(t.c) + '</span>' +
-          '<h3 style="font-size:1.55rem;line-height:1.08;margin:11px 0 5px;">' + esc(t.n) + '</h3>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;color:#8a7d5f;">Ref ' + t.r + '</div>' +
-          (meta ? '<div style="font-size:13px;color:#6b6455;margin-top:7px;">' + esc(meta) + '</div>' : '') +
-          '<div style="margin-top:13px;font-size:13px;font-weight:600;color:#2f5140;">View details →</div>' +
-          '</div></a>';
-      }
+      // Pure-number query: exact reference lookup (fuzzy is for words).
+      if (/^\d+$/.test(q)) return byCat(all.filter((t) => String(t.r).indexOf(q) !== -1));
+      // Words: fuzzy, relevance-ranked, then narrowed to the active category.
+      const hits = fuse ? fuse.search(q).map((h) => h.item) : [];
+      return byCat(hits);
+    }
 
-      function applyFilter() {
-        var q = state.q.trim().toLowerCase();
-        filtered = all.filter(function (t) {
-          var okC = state.cat === 'All' || t.c === state.cat;
-          if (!okC) return false;
-          if (!q) return true;
-          return t.n.toLowerCase().indexOf(q) !== -1 || String(t.r).indexOf(q) !== -1 ||
-            (t.d || '').toLowerCase().indexOf(q) !== -1 || t.c.toLowerCase().indexOf(q) !== -1 ||
-            (t.o || '').toLowerCase().indexOf(q) !== -1;
-        });
-        if (state.sort === 'ref') filtered.sort(function (a, b) { return a.r - b.r; });
-        else if (state.sort === 'cat') filtered.sort(function (a, b) { return a.c.localeCompare(b.c) || a.n.localeCompare(b.n); });
-        else filtered.sort(function (a, b) { return a.n.localeCompare(b.n); });
+    function applyFilter() {
+      filtered = compute();
+      grid.innerHTML = '';
+      shown = 0;
+      renderMore();
 
-        grid.innerHTML = '';
-        shown = 0;
-        renderMore();
+      const n = filtered.length;
+      let label = n + (n === 1 ? ' tartan' : ' tartans');
+      if (state.cat !== 'All') label += ' in ' + state.cat;
+      if (state.q.trim()) label += ' matching “' + state.q.trim() + '”';
+      countLabel.textContent = label;
+      emptyState.style.display = n === 0 ? 'block' : 'none';
+      grid.style.display = n === 0 ? 'none' : 'grid';
 
-        var n = filtered.length;
-        var label = n + (n === 1 ? ' tartan' : ' tartans');
-        if (state.cat !== 'All') label += ' in ' + state.cat;
-        if (q) label += ' matching “' + state.q.trim() + '”';
-        countLabel.textContent = label;
-        emptyState.style.display = n === 0 ? 'block' : 'none';
-        grid.style.display = n === 0 ? 'none' : 'grid';
+      const url = new URL(location.href);
+      if (state.q) url.searchParams.set('q', state.q); else url.searchParams.delete('q');
+      if (state.cat !== 'All') url.searchParams.set('cat', state.cat); else url.searchParams.delete('cat');
+      history.replaceState({}, '', url);
+    }
 
-        var url = new URL(location.href);
-        if (state.q) url.searchParams.set('q', state.q); else url.searchParams.delete('q');
-        if (state.cat !== 'All') url.searchParams.set('cat', state.cat); else url.searchParams.delete('cat');
-        history.replaceState({}, '', url);
-      }
+    function renderMore() {
+      if (shown >= filtered.length) return;
+      const next = filtered.slice(shown, shown + BATCH);
+      let html = '';
+      for (const t of next) html += cardHTML(t);
+      grid.insertAdjacentHTML('beforeend', html);
+      shown += next.length;
+    }
 
-      function renderMore() {
-        if (shown >= filtered.length) return;
-        var next = filtered.slice(shown, shown + BATCH);
-        var html = '';
-        for (var i = 0; i < next.length; i++) html += cardHTML(next[i]);
-        grid.insertAdjacentHTML('beforeend', html);
-        shown += next.length;
-      }
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) renderMore();
+    }, { rootMargin: '600px 0px' });
+    io.observe(sentinel);
 
-      var io = new IntersectionObserver(function (entries) {
-        if (entries[0].isIntersecting) renderMore();
-      }, { rootMargin: '600px 0px' });
-      io.observe(sentinel);
-
-      function setChips() {
-        Array.prototype.forEach.call(chipsWrap.querySelectorAll('.tf-chip'), function (chip) {
-          chip.classList.toggle('is-active', chip.dataset.cat === state.cat);
-        });
-      }
-
-      qInput.addEventListener('input', function (e) { state.q = e.target.value; applyFilter(); });
-      sortSelect.addEventListener('change', function (e) { state.sort = e.target.value; applyFilter(); });
-      chipsWrap.addEventListener('click', function (e) {
-        var chip = e.target.closest('.tf-chip');
-        if (!chip) return;
-        state.cat = chip.dataset.cat; setChips(); applyFilter();
+    function setChips() {
+      chipsWrap.querySelectorAll<HTMLElement>('.tf-chip').forEach((chip) => {
+        chip.classList.toggle('is-active', chip.dataset.cat === state.cat);
       });
-      clearBtn.addEventListener('click', function () {
-        state.q = ''; state.cat = 'All'; qInput.value = ''; setChips(); applyFilter();
-      });
+    }
 
-      fetch(BASE + 'tartans-search.json')
-        .then(function (r) { return r.json(); })
-        .then(function (data) { all = data; setChips(); applyFilter(); })
-        .catch(function () { countLabel.textContent = 'Could not load the catalogue.'; });
-    })();
+    qInput.addEventListener('input', (e) => { state.q = (e.target as HTMLInputElement).value; applyFilter(); });
+    sortSelect.addEventListener('change', (e) => { state.sort = (e.target as HTMLSelectElement).value; applyFilter(); });
+    chipsWrap.addEventListener('click', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.tf-chip');
+      if (!chip) return;
+      state.cat = chip.dataset.cat ?? 'All'; setChips(); applyFilter();
+    });
+    clearBtn.addEventListener('click', () => {
+      state.q = ''; state.cat = 'All'; qInput.value = ''; setChips(); applyFilter();
+    });
+
+    fetch(BASE + 'tartans-search.json')
+      .then((r) => r.json())
+      .then((data: T[]) => {
+        all = data;
+        // Typo-tolerant, relevance-ranked. ignoreLocation so matches deep in
+        // long notes still count; name weighted highest.
+        fuse = new Fuse(all, {
+          ignoreLocation: true,
+          threshold: 0.35,
+          minMatchCharLength: 2,
+          keys: [
+            { name: 'n', weight: 0.6 },
+            { name: 'd', weight: 0.2 },
+            { name: 'c', weight: 0.1 },
+            { name: 'o', weight: 0.1 },
+          ],
+        });
+        setChips();
+        applyFilter();
+      })
+      .catch(() => { countLabel.textContent = 'Could not load the catalogue.'; });
   </script>
 </Layout>
