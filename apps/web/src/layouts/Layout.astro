@@ -1,0 +1,127 @@
+---
+import '../styles/global.css';
+import { base } from '../lib/base';
+
+interface Props {
+  title: string;
+  description?: string;
+  active?: 'search' | 'browse' | 'categories' | 'about';
+}
+
+const {
+  title,
+  description = 'An independent, unofficial catalogue for searching and browsing Scottish tartans, attributed to the Scottish Register of Tartans.',
+  active,
+} = Astro.props;
+
+const GITHUB_URL = 'https://github.com/scottish-tartan-finder/catalogue';
+const REGISTER_URL = 'https://www.tartanregister.gov.uk';
+
+const navItems: Array<{ key: 'search' | 'browse' | 'categories' | 'about'; href: string; label: string }> = [
+  { key: 'search', href: `${base}search`, label: 'Search' },
+  { key: 'browse', href: `${base}browse`, label: 'Browse A–Z' },
+  { key: 'categories', href: `${base}categories`, label: 'Categories' },
+  { key: 'about', href: `${base}about`, label: 'About' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <header style="position:sticky;top:0;z-index:40;background:rgba(246,241,231,.92);backdrop-filter:blur(10px);border-bottom:1px solid #e0d7c3;">
+        <div style="max-width:1180px;margin:0 auto;padding:14px clamp(18px,5cqw,48px);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:nowrap;">
+          <a href={base} style="display:flex;align-items:center;gap:11px;cursor:pointer;min-width:0;text-decoration:none;color:inherit;">
+            <div style="width:34px;height:34px;border:1.5px solid #2f5140;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <div style="width:16px;height:16px;background:repeating-linear-gradient(0deg,#2f5140 0 3px,transparent 3px 6px),repeating-linear-gradient(90deg,#6d2532 0 3px,transparent 3px 6px);opacity:.85;"></div>
+            </div>
+            <div style="line-height:1;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;letter-spacing:.01em;">Scottish Tartan Finder</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:#8a7d5f;margin-top:3px;">Unofficial reference catalogue</div>
+            </div>
+          </a>
+          <nav class="tf-desktop-nav" style="align-items:center;gap:clamp(14px,2.4cqw,28px);flex-wrap:wrap;">
+            {navItems.map((item) => (
+              <a
+                href={item.href}
+                style={`font-size:14px;font-weight:${active === item.key ? 600 : 500};color:${active === item.key ? '#211d16' : '#6b6455'};padding-bottom:3px;border-bottom:2px solid ${active === item.key ? '#2f5140' : 'transparent'};text-decoration:none;`}
+              >{item.label}</a>
+            ))}
+            <a href={GITHUB_URL} target="_blank" rel="noopener" style="font-size:14px;font-weight:500;color:#6b6455;display:inline-flex;align-items:center;gap:5px;text-decoration:none;">GitHub<span style="font-size:11px;">↗</span></a>
+          </nav>
+          <button id="tf-burger" class="tf-burger" aria-label="Menu" aria-expanded="false" style="flex-shrink:0;width:46px;height:46px;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:transparent;border:1px solid #d8cdb4;border-radius:3px;cursor:pointer;">
+            <span style="width:20px;height:2px;background:#3a3428;display:block;"></span><span style="width:20px;height:2px;background:#3a3428;display:block;"></span><span style="width:20px;height:2px;background:#3a3428;display:block;"></span>
+          </button>
+        </div>
+        <nav id="tf-mobile-menu" class="tf-mobile-menu" style="border-top:1px solid #e0d7c3;background:#f6f1e7;padding:8px clamp(18px,5cqw,48px) 16px;flex-direction:column;">
+          {navItems.map((item) => (
+            <a href={item.href} style="padding:15px 4px;font-size:17px;font-weight:600;color:#211d16;border-bottom:1px solid #e8e0cd;text-decoration:none;">{item.label}</a>
+          ))}
+          <a href={GITHUB_URL} target="_blank" rel="noopener" style="padding:15px 4px;font-size:17px;font-weight:600;color:#2f5140;text-decoration:none;">GitHub ↗</a>
+        </nav>
+      </header>
+      <main style="flex:1;">
+        <slot />
+      </main>
+      <footer style="background:#20241f;color:#cfc7b6;">
+        <div style="height:3px;background:repeating-linear-gradient(90deg,#223851 0 22px,#2f5140 22px 30px,#6d2532 30px 52px,#a67c2e 52px 58px);opacity:.85;"></div>
+        <div style="max-width:1180px;margin:0 auto;padding:clamp(40px,5cqw,60px) clamp(18px,5cqw,48px) 30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:34px;">
+          <div style="max-width:34ch;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#f0e9d8;">Scottish Tartan Finder</div>
+            <p style="font-size:13.5px;line-height:1.7;color:#a49c8a;margin:12px 0 0;">An independent, unofficial catalogue for searching and understanding Scottish tartans.</p>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#7d765f;margin-bottom:14px;">Browse</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              {navItems.map((item) => (
+                <a href={item.href} style="font-size:14px;color:#cfc7b6;text-decoration:none;">{item.label}</a>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#7d765f;margin-bottom:14px;">Source</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <a href={REGISTER_URL} target="_blank" rel="noopener" style="font-size:14px;color:#cfc7b6;text-decoration:none;">Scottish Register of Tartans ↗</a>
+              <a href={GITHUB_URL} target="_blank" rel="noopener" style="font-size:14px;color:#cfc7b6;text-decoration:none;">Project on GitHub ↗</a>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1180px;margin:0 auto;padding:0 clamp(18px,5cqw,48px) 40px;">
+          <p style="font-size:12px;line-height:1.7;color:#8a8270;border-top:1px solid #34382f;padding-top:22px;margin:0;">Scottish Tartan Finder is not affiliated with, endorsed by, or connected to the Scottish Register of Tartans or the National Records of Scotland. Tartan records are attributed to the Scottish Register of Tartans. © 2026 Scottish Tartan Finder — unofficial reference project.</p>
+        </div>
+      </footer>
+    </div>
+    <script is:inline>
+      (function () {
+        var burger = document.getElementById('tf-burger');
+        var menu = document.getElementById('tf-mobile-menu');
+        if (!burger || !menu) return;
+        burger.addEventListener('click', function () {
+          var open = menu.classList.toggle('is-open');
+          burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        menu.addEventListener('click', function (e) {
+          if (e.target.closest('a')) {
+            menu.classList.remove('is-open');
+            burger.setAttribute('aria-expanded', 'false');
+          }
+        });
+        window.addEventListener('resize', function () {
+          if (window.innerWidth > 760) {
+            menu.classList.remove('is-open');
+            burger.setAttribute('aria-expanded', 'false');
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
