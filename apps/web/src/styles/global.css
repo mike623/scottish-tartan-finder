@@ -31,3 +31,7 @@ input,select,button{font-family:inherit;}
 .tf-chip{cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 12px;border-radius:2px;border:1px solid #d8cdb4;background:#faf6ec;color:#6b6455;}
 .tf-chip.is-active{border-color:#2f5140;background:#2f5140;color:#f6f1e7;}
 .tf-card.is-hidden{display:none;}
+/* Browse A–Z letter nav (click switches the list to that letter) */
+.tf-az{min-width:34px;text-align:center;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;border-radius:2px;color:#3a3428;text-decoration:none;border:1px solid transparent;}
+.tf-az.is-active{background:#2f5140;color:#f6f1e7;border-color:#2f5140;}
+.tf-az-disabled{min-width:34px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 6px;color:#c3b89e;}
