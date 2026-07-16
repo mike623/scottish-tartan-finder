@@ -5,7 +5,7 @@ import { base } from '../lib/base';
 interface Props {
   title: string;
   description?: string;
-  active?: 'search' | 'browse' | 'categories' | 'about';
+  active?: 'search' | 'browse' | 'categories' | 'identify' | 'about';
 }
 
 const {
@@ -17,10 +17,11 @@ const {
 const GITHUB_URL = 'https://github.com/scottish-tartan-finder/catalogue';
 const REGISTER_URL = 'https://www.tartanregister.gov.uk';
 
-const navItems: Array<{ key: 'search' | 'browse' | 'categories' | 'about'; href: string; label: string }> = [
+const navItems: Array<{ key: 'search' | 'browse' | 'categories' | 'identify' | 'about'; href: string; label: string }> = [
   { key: 'search', href: `${base}search`, label: 'Search' },
   { key: 'browse', href: `${base}browse`, label: 'Browse A–Z' },
   { key: 'categories', href: `${base}categories`, label: 'Categories' },
+  { key: 'identify', href: `${base}identify`, label: 'Identify' },
   { key: 'about', href: `${base}about`, label: 'About' },
 ];
 ---

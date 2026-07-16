@@ -52,6 +52,7 @@ async function runSync(args: string[]): Promise<void> {
     mode,
     maxNew: flags.max ? Number(flags.max) : undefined,
     concurrency: flags.concurrency ? Number(flags.concurrency) : undefined,
+    delayMs: flags.delay ? Number(flags.delay) : undefined,
     letters: flags.letters ? flags.letters.split(",") : undefined,
   });
   console.error(

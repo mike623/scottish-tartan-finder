@@ -1,0 +1,252 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { tartans } from '../lib/tartans';
+import { base } from '../lib/base';
+
+// Illustrative result data. The on-device matcher (docs/superpowers/specs/
+// 2026-07-16-image-search-design.md) is not built yet, so the results state
+// shows example catalogue tartans behind a clear "preview" banner — it does NOT
+// match the user's photo. Grouped into two pseudo-"families" purely for layout.
+const pool = tartans.slice(0, 7);
+const toItem = (t: (typeof tartans)[number]) => ({
+  name: t.name,
+  ref: t.ref,
+  cat: t.category,
+  meta: [t.designer, t.tartanDate].filter(Boolean).join(' · '),
+  href: `${base}tartan/${t.ref}`,
+});
+type Conf = 'strong' | 'possible' | 'weak';
+const families: Array<{ set: string; conf: Conf; items: ReturnType<typeof toItem>[] }> = [
+  { set: pool[0]?.name ?? 'Example', conf: 'strong' as Conf, items: pool.slice(0, 3).map(toItem) },
+  { set: pool[3]?.name ?? 'Example', conf: 'possible' as Conf, items: pool.slice(3, 6).map(toItem) },
+].filter((f) => f.items.length > 0);
+
+const confMeta: Record<Conf, { dots: string; label: string; color: string; bg: string; border: string }> = {
+  strong: { dots: '●●●', label: 'Strong match', color: '#2f5140', bg: '#eef2ea', border: '#cdd7c9' },
+  possible: { dots: '●●○', label: 'Possible', color: '#a67c2e', bg: '#f5efe0', border: '#e3d7bd' },
+  weak: { dots: '●○○', label: 'Weak', color: '#8a7d5f', bg: '#efe9dc', border: '#ddd3bd' },
+};
+const confPill = (c: Conf) => {
+  const m = confMeta[c];
+  return `display:inline-flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:${m.color};background:${m.bg};border:1px solid ${m.border};padding:5px 11px;border-radius:2px;`;
+};
+
+const panelHead = (n: string, label: string, tag: string) =>
+  `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid #e4dcc9;background:#efe8db;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#3a3428;">${n} — ${label}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#a89b7c;">${tag}</span></div>`;
+const panel = 'border:1px solid #e0d7c3;background:#f6f1e7;border-radius:3px;overflow:hidden;';
+---
+
+<Layout title="Identify a tartan from a photo — Scottish Tartan Finder" active="identify" description="Upload a photo of an unknown tartan and find the closest registered matches — analysed privately in your browser.">
+  <div style="max-width:1180px;margin:0 auto;padding:clamp(30px,4cqw,52px) clamp(18px,5cqw,48px) 80px;">
+
+    <!-- intro -->
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8a7d5f;margin-bottom:12px;">Match a photo</div>
+    <h1 style="font-size:clamp(2.2rem,5.4cqw,3.6rem);line-height:1.0;letter-spacing:-.01em;max-width:15ch;">Find a tartan from a photo</h1>
+    <p style="max-width:60ch;margin:20px 0 0;font-size:clamp(15px,1.7cqw,18px);line-height:1.65;color:#5c5647;">Upload or snap a picture of an unknown sett and we'll surface the closest registered tartans — a starting point for identification, not a verdict.</p>
+
+    <div style="display:flex;align-items:flex-start;gap:13px;margin:26px 0 4px;padding:15px 18px;border:1px solid #cdd7c9;background:#eef2ea;border-radius:3px;max-width:640px;">
+      <div aria-hidden="true" style="flex-shrink:0;width:26px;height:26px;border:1.5px solid #2f5140;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#2f5140;font-size:14px;">⚿</div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#2f5140;margin-bottom:5px;">On-device · Private</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.6;color:#3a4a3f;">Your photo is analysed entirely in your browser and is <strong>never uploaded</strong>. This is an unofficial reference tool — results are closest matches, not an authoritative identification.</p>
+      </div>
+    </div>
+
+    <!-- preview banner: honest about the matcher not being wired yet -->
+    <div style="margin:22px 0 0;padding:14px 18px;border:1px solid #e3d7bd;background:#f5efe0;border-radius:3px;max-width:640px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#a67c2e;margin-bottom:5px;">Preview</div>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#6b5a34;">The on-device matcher is still in design. Upload and crop work, but the results shown are <strong>illustrative examples</strong> from the catalogue — not a real match of your photo yet.</p>
+    </div>
+
+    <!-- 01 · upload -->
+    <section id="s-upload" style={`margin-top:44px;${panel}`}>
+      <Fragment set:html={panelHead('01', 'Upload / capture', 'Start here')} />
+      <div style="padding:clamp(18px,3cqw,32px);">
+        <label id="dropzone" for="tf-file" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;border:1.5px dashed #cdbf9f;border-radius:4px;background:#e9e1cf;background-image:repeating-linear-gradient(135deg,#e2d8bd 0 8px,#efe8d6 8px 17px);min-height:300px;padding:34px 22px;cursor:pointer;">
+          <div aria-hidden="true" style="width:52px;height:52px;border:1.5px solid #2f5140;border-radius:4px;background:#fbf8f1;display:flex;align-items:center;justify-content:center;">
+            <div style="width:22px;height:22px;background:repeating-linear-gradient(0deg,#2f5140 0 3px,transparent 3px 6px),repeating-linear-gradient(90deg,#6d2532 0 3px,transparent 3px 6px);opacity:.85;"></div>
+          </div>
+          <div>
+            <h2 style="font-size:1.9rem;line-height:1.05;margin:0 0 6px;">Drag a photo here</h2>
+            <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;color:#8a7d5f;max-width:46ch;line-height:1.7;">JPG or PNG · a clear, flat, well-lit shot of the fabric works best</p>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+            <span style="background:#2f5140;color:#f6f1e7;min-height:48px;padding:0 24px;font-weight:600;font-size:15px;border-radius:2px;display:inline-flex;align-items:center;">Choose a photo</span>
+            <button id="tf-camera" type="button" style="background:#fbf8f1;color:#3a3428;border:1px solid #cdbf9f;min-height:48px;padding:0 22px;font-weight:600;font-size:15px;cursor:pointer;border-radius:2px;display:inline-flex;align-items:center;gap:8px;"><span aria-hidden="true" style="font-size:16px;">◉</span>Use camera</button>
+          </div>
+        </label>
+        <input id="tf-file" type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;" />
+      </div>
+    </section>
+
+    <!-- 02 · crop -->
+    <section id="s-crop" style={`margin-top:32px;display:none;${panel}`}>
+      <Fragment set:html={panelHead('02', 'Crop the pattern', 'Photo selected')} />
+      <div style="padding:clamp(18px,3cqw,32px);">
+        <p style="margin:0 0 18px;font-size:14px;color:#5c5647;line-height:1.6;">Frame a flat area of the pattern — avoid folds, seams and shadow. Drag the box to reframe.</p>
+        <div style="max-width:520px;">
+          <div id="crop-stage" style="position:relative;aspect-ratio:4/3;overflow:hidden;border:1px solid #cdbf9f;border-radius:3px;background:#d8ccae;touch-action:none;">
+            <img id="crop-img" alt="Your selected photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;" />
+            <div id="crop-box" style="position:absolute;top:24%;left:22%;width:48%;height:52%;border:2px solid #f6f1e7;box-shadow:0 0 0 9999px rgba(23,20,15,.5);cursor:move;">
+              <div style="position:absolute;top:-5px;left:-5px;width:12px;height:12px;background:#f6f1e7;border:1px solid #2f5140;"></div>
+              <div style="position:absolute;top:-5px;right:-5px;width:12px;height:12px;background:#f6f1e7;border:1px solid #2f5140;"></div>
+              <div style="position:absolute;bottom:-5px;left:-5px;width:12px;height:12px;background:#f6f1e7;border:1px solid #2f5140;"></div>
+              <div style="position:absolute;bottom:-5px;right:-5px;width:12px;height:12px;background:#f6f1e7;border:1px solid #2f5140;"></div>
+              <span style="position:absolute;left:0;bottom:-24px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#f6f1e7;background:rgba(23,20,15,.55);padding:2px 7px;">drag to reframe</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:18px;">
+            <button id="btn-match" type="button" style="background:#2f5140;color:#f6f1e7;border:none;min-height:48px;padding:0 26px;font-weight:600;font-size:15px;cursor:pointer;border-radius:2px;">Match this</button>
+            <button class="btn-reset" type="button" style="background:transparent;border:1px solid #cdbf9f;color:#3a3428;min-height:48px;padding:0 20px;font-weight:600;font-size:14px;cursor:pointer;border-radius:2px;">Choose a different photo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 · analyzing -->
+    <section id="s-analyze" style={`margin-top:32px;display:none;${panel}`}>
+      <Fragment set:html={panelHead('03', 'Analysing', 'Working…')} />
+      <div style="padding:clamp(20px,3cqw,34px);max-width:640px;">
+        <div style="margin-bottom:28px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.06em;color:#3a3428;">Preparing the matcher</span>
+            <span id="pct-a" style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a7d5f;">0%</span>
+          </div>
+          <div role="progressbar" aria-label="Preparing matcher" style="height:10px;background:#e4dcc9;border-radius:2px;overflow:hidden;">
+            <div id="bar-a" style="width:0%;height:100%;background:repeating-linear-gradient(90deg,#2f5140 0 9px,#3c6650 9px 18px);transition:width .2s linear;"></div>
+          </div>
+          <p style="margin:9px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.03em;color:#8a7d5f;line-height:1.7;">First use downloads the matching model — this may take a moment. It's cached in your browser afterwards.</p>
+        </div>
+        <div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.06em;color:#3a3428;">Matching against 10,000+ tartans</span>
+            <span id="pct-b" style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a7d5f;">scanning…</span>
+          </div>
+          <div role="progressbar" aria-label="Comparing your crop against the catalogue" style="height:10px;background:#e4dcc9;border-radius:2px;overflow:hidden;">
+            <div id="bar-b" style="width:0%;height:100%;background:repeating-linear-gradient(90deg,#a67c2e 0 9px,#b98f3f 9px 18px);transition:width .2s linear;"></div>
+          </div>
+          <p style="margin:9px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.03em;color:#8a7d5f;line-height:1.7;">Comparing the sett's colour bands against registered designs.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 · results (illustrative) -->
+    <section id="s-results" style={`margin-top:32px;display:none;${panel}`}>
+      <Fragment set:html={panelHead('04', 'Results', 'Closest matches')} />
+      <div style="padding:clamp(20px,3cqw,34px);">
+        <div style="margin:0 0 22px;padding:12px 16px;border:1px solid #e3d7bd;background:#f5efe0;border-radius:3px;">
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#6b5a34;"><strong>Illustrative preview.</strong> These are example catalogue tartans to show the results layout — the matcher isn't wired to your photo yet.</p>
+        </div>
+        {families.map((fam) => {
+          const m = confMeta[fam.conf] ?? confMeta.weak;
+          return (
+            <div style="margin-bottom:34px;">
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+                <h3 style="font-size:1.7rem;line-height:1;margin:0;">{fam.set} <span style="color:#8a7d5f;font-weight:500;">family</span></h3>
+                <span style={confPill(fam.conf)}><span aria-hidden="true">{m.dots}</span>{m.label}</span>
+                <div style="flex:1;height:1px;background:#e0d7c3;min-width:20px;"></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#8a7d5f;">{fam.items.length} example{fam.items.length === 1 ? '' : 's'}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;">
+                {fam.items.map((item) => (
+                  <a href={item.href} class="tf-card" style="display:block;text-decoration:none;color:inherit;">
+                    <div aria-hidden="true" style="aspect-ratio:4/3;background:#e9e1cf;background-image:repeating-linear-gradient(135deg,#e2d8bd 0 7px,#ece5d3 7px 15px);display:flex;align-items:flex-end;padding:10px;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8a7d5f;background:rgba(251,248,241,.85);padding:3px 7px;border:1px solid #ded3ba;">tartan preview</span>
+                    </div>
+                    <div style="padding:15px 16px 18px;">
+                      <span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:#2f5140;background:#eef0e7;border:1px solid #d9dcc9;padding:3px 8px;">{item.cat}</span>
+                      <h3 style="font-size:1.5rem;line-height:1.08;margin:11px 0 5px;">{item.name}</h3>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a7d5f;">Ref {item.ref}</div>
+                      {item.meta && <div style="font-size:13px;color:#6b6455;margin-top:7px;">{item.meta}</div>}
+                      <div style="margin-top:13px;font-size:13px;font-weight:600;color:#2f5140;">View details →</div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        <button class="btn-reset" type="button" style="background:#2f5140;color:#f6f1e7;border:none;min-height:48px;padding:0 24px;font-weight:600;font-size:15px;cursor:pointer;border-radius:2px;">Try another photo</button>
+      </div>
+    </section>
+
+  </div>
+
+  <script is:inline>
+    (function () {
+      var file = document.getElementById('tf-file');
+      var camera = document.getElementById('tf-camera');
+      var img = document.getElementById('crop-img');
+      var sections = {
+        upload: document.getElementById('s-upload'),
+        crop: document.getElementById('s-crop'),
+        analyze: document.getElementById('s-analyze'),
+        results: document.getElementById('s-results'),
+      };
+      function show(name) {
+        Object.keys(sections).forEach(function (k) {
+          sections[k].style.display = k === name ? 'block' : 'none';
+        });
+        if (name !== 'upload') sections[name].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      camera.addEventListener('click', function () {
+        file.setAttribute('capture', 'environment');
+        file.click();
+      });
+
+      file.addEventListener('change', function () {
+        var f = file.files && file.files[0];
+        if (!f) return;
+        var url = URL.createObjectURL(f);
+        img.src = url;
+        img.onload = function () { URL.revokeObjectURL(url); };
+        show('crop');
+      });
+
+      // Draggable crop box (move only — illustrative crop for now).
+      var box = document.getElementById('crop-box');
+      var stage = document.getElementById('crop-stage');
+      var drag = null;
+      function pct(v) { return Math.max(0, Math.min(100, v)); }
+      box.addEventListener('pointerdown', function (e) {
+        var r = stage.getBoundingClientRect();
+        drag = { x: e.clientX, y: e.clientY, left: parseFloat(box.style.left), top: parseFloat(box.style.top), w: r.width, h: r.height };
+        box.setPointerCapture(e.pointerId);
+      });
+      box.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var dxp = ((e.clientX - drag.x) / drag.w) * 100;
+        var dyp = ((e.clientY - drag.y) / drag.h) * 100;
+        var bw = parseFloat(box.style.width), bh = parseFloat(box.style.height);
+        box.style.left = pct(drag.left + dxp) + '%';
+        box.style.top = pct(drag.top + dyp) + '%';
+        if (parseFloat(box.style.left) + bw > 100) box.style.left = (100 - bw) + '%';
+        if (parseFloat(box.style.top) + bh > 100) box.style.top = (100 - bh) + '%';
+      });
+      box.addEventListener('pointerup', function () { drag = null; });
+
+      // Match -> analyzing (simulated progress) -> results.
+      document.getElementById('btn-match').addEventListener('click', function () {
+        show('analyze');
+        var a = 0, b = 0;
+        var barA = document.getElementById('bar-a'), pctA = document.getElementById('pct-a');
+        var barB = document.getElementById('bar-b'), pctB = document.getElementById('pct-b');
+        var t = setInterval(function () {
+          a = Math.min(100, a + 9);
+          barA.style.width = a + '%'; pctA.textContent = a + '%';
+          if (a >= 100) { b = Math.min(100, b + 12); barB.style.width = b + '%'; pctB.textContent = b >= 100 ? 'done' : 'scanning…'; }
+          if (b >= 100) { clearInterval(t); setTimeout(function () { show('results'); }, 250); }
+        }, 130);
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll('.btn-reset'), function (btn) {
+        btn.addEventListener('click', function () {
+          file.value = '';
+          show('upload');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    })();
+  </script>
+</Layout>
