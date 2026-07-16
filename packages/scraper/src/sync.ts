@@ -15,7 +15,7 @@
  * how many run at once and spaces request starts (see http/client.ts). Against
  * this single .gov.uk host, keep concurrency low.
  */
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { readFile, mkdir, writeFile, rename } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -176,7 +176,11 @@ export async function syncIndex(options: SyncOptions = {}): Promise<SyncSummary>
 
   const merged = mergeRecords(existing, fetched);
   await mkdir(path.dirname(dataFile), { recursive: true });
-  await writeFile(dataFile, `${JSON.stringify(merged, null, 2)}\n`, "utf-8");
+  // Atomic write: a kill mid-write must not corrupt the index. Write a temp
+  // file, then rename over the target (rename is atomic on the same fs).
+  const tmp = `${dataFile}.tmp`;
+  await writeFile(tmp, `${JSON.stringify(merged, null, 2)}\n`, "utf-8");
+  await rename(tmp, dataFile);
 
   const added = fetched.filter((r) => !existing.has(r.ref)).length;
   const updated = fetched.length - added;
