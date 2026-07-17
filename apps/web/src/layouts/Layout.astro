@@ -26,7 +26,8 @@ const navItems: Array<{ key: 'search' | 'browse' | 'categories' | 'identify' | '
   { key: 'search', href: `${base}search`, label: 'Search' },
   { key: 'browse', href: `${base}browse`, label: 'Browse A–Z' },
   { key: 'categories', href: `${base}categories`, label: 'Categories' },
-  { key: 'identify', href: `${base}identify`, label: 'Identify' },
+  // 'identify' hidden from nav — photo-match is a future improvement, not shipped.
+  // Page still builds (unlinked); results are illustrative. See docs/adr/0001-identify-embedding-model.md.
   { key: 'about', href: `${base}about`, label: 'About' },
 ];
 ---
