@@ -3,6 +3,12 @@ import Layout from '../layouts/Layout.astro';
 import { tartans, imageSrc } from '../lib/tartans';
 import { base } from '../lib/base';
 
+// FUTURE IMPROVEMENT — not shipped. Hidden from nav (see Layout.astro); reachable
+// only by direct URL. POC found off-the-shelf embeddings + palette re-rank fail on
+// real-world photos (rank 60/136 for an angled Royal Stewart jacket) despite passing
+// a synthetic eval. Needs a real labeled eval set, auto fabric-crop, and re-rank
+// rework before wiring. Full write-up: docs/adr/0001-identify-embedding-model.md.
+//
 // Illustrative result data. The on-device matcher (docs/superpowers/specs/
 // 2026-07-16-image-search-design.md) is not built yet, so the results state
 // shows example catalogue tartans behind a clear "preview" banner — it does NOT
