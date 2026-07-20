@@ -1,0 +1,7 @@
+# Cloudflare Worker: edge cache/proxy for tartanregister.gov.uk swatch images.
+# Deploy: `npx wrangler login` then `npx wrangler deploy` (prints the *.workers.dev URL).
+# No account_id committed — `wrangler login` supplies it. Not part of `npm run build`.
+name = "tartan-img"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+workers_dev = true

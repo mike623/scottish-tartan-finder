@@ -31,9 +31,18 @@ export function getTartanByRef(ref: number): TartanRecord | undefined {
 
 // Official swatch image. Uses the canonical `/imageCreation` endpoint (the
 // `.aspx` form in imageUrl 301-redirects to it — skip the hop). Square image;
-// cards crop it with object-fit. Returns null if we somehow have no ref.
+// cards crop it with object-fit.
+//
+// Origin is swappable via PUBLIC_IMAGE_ORIGIN (baked in at build): in production it
+// points at the tartan-img Cloudflare Worker (edge cache in front of the slow, non-CDN
+// .gov.uk origin — see packages/image-cache-worker). Unset → hits gov.uk directly, so
+// local dev works with no worker. The worker mounts the same /imageCreation path+params,
+// so only the origin differs.
+// `||` (not `??`) so an empty string from an unset CI variable also falls back.
+const IMAGE_ORIGIN = import.meta.env.PUBLIC_IMAGE_ORIGIN || 'https://www.tartanregister.gov.uk';
+
 export function imageSrc(t: Pick<TartanRecord, 'ref'>, size = 360): string {
-  return `https://www.tartanregister.gov.uk/imageCreation?height=${size}&ref=${t.ref}&width=${size}`;
+  return `${IMAGE_ORIGIN}/imageCreation?height=${size}&ref=${t.ref}&width=${size}`;
 }
 
 export function categoryCounts(): Record<string, number> {

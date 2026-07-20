@@ -25,6 +25,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build   # builds apps/web from committed data/tartans-index.json (no live crawl in CI)
+        env:
+          # Set repo variable IMAGE_ORIGIN to the deployed worker URL
+          # (Settings → Secrets and variables → Actions → Variables), e.g.
+          # https://tartan-img.<subdomain>.workers.dev. Unset → images hit gov.uk directly.
+          PUBLIC_IMAGE_ORIGIN: ${{ vars.IMAGE_ORIGIN }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
