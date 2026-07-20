@@ -30,6 +30,10 @@ jobs:
           # (Settings → Secrets and variables → Actions → Variables), e.g.
           # https://tartan-img.<subdomain>.workers.dev. Unset → images hit gov.uk directly.
           PUBLIC_IMAGE_ORIGIN: ${{ vars.IMAGE_ORIGIN }}
+          # Set repo variable CF_BEACON_TOKEN to the Cloudflare Web Analytics
+          # beacon token (dash.cloudflare.com → Web Analytics → your site).
+          # Unset → no analytics script emitted.
+          CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
