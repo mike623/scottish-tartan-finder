@@ -14,6 +14,7 @@
     "crawl:discover": "npm run discover -w packages/scraper",
     "crawl:details": "npm run details -w packages/scraper",
     "crawl:smoke": "npm run smoke -w packages/scraper",
+    "crawl:sync": "npm run sync -w packages/scraper --",
     "test": "npm test --workspaces --if-present"
   }
 }
