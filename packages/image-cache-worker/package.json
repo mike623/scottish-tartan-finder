@@ -1,0 +1,11 @@
+{
+  "name": "@scottish-tartan-finder/image-cache-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx wrangler@3 dev",
+    "deploy": "npx wrangler@3 deploy",
+    "test": "tsx --test src/*.test.ts"
+  }
+}
