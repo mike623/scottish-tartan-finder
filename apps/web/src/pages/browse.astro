@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { tartans, letterOf } from '../lib/tartans';
+import { tartans, letterOf, IMAGE_ORIGIN } from '../lib/tartans';
 import { base } from '../lib/base';
 
 const counts: Record<string, number> = {};
@@ -27,7 +27,7 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
         );
       })}
     </div>
-    <div id="list" data-base={base}></div>
+    <div id="list" data-base={base} data-image-origin={IMAGE_ORIGIN}></div>
     <div id="sentinel" style="height:1px;"></div>
   </div>
 
@@ -35,6 +35,7 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     (function () {
       var list = document.getElementById('list');
       var BASE = list.dataset.base;
+      var IMG_ORIGIN = list.dataset.imageOrigin;
       var sentinel = document.getElementById('sentinel');
       var azBar = document.getElementById('az-bar');
       var navLinks = azBar.querySelectorAll('.tf-az');
@@ -51,7 +52,7 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
       function cardHTML(t) {
-        var img = 'https://www.tartanregister.gov.uk/imageCreation?height=360&ref=' + t.r + '&width=360';
+        var img = IMG_ORIGIN + '/imageCreation?height=360&ref=' + t.r + '&width=360';
         var meta = [t.d, t.y].filter(Boolean).join(' · ');
         return '<a class="tf-card" href="' + BASE + 'tartan/' + t.r + '">' +
           '<div class="tf-prev"><span class="tf-prev-label">tartan preview</span>' +
