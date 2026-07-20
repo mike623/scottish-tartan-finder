@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  site: 'https://mike623.github.io',
-  base: '/scottish-tartan-finder',
+  site: 'https://scottish-tartan-finder.pages.dev',
+  base: '/',
   output: 'static',
 });

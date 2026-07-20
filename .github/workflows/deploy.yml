@@ -1,21 +1,12 @@
-name: Deploy Astro site to GitHub Pages
+name: Deploy Astro site to Cloudflare Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  build:
+  build-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,24 +17,13 @@ jobs:
       - run: npm ci
       - run: npm run build   # builds apps/web from committed data/tartans-index.json (no live crawl in CI)
         env:
-          # Set repo variable IMAGE_ORIGIN to the deployed worker URL
-          # (Settings → Secrets and variables → Actions → Variables), e.g.
+          # Repo variable IMAGE_ORIGIN → deployed image worker URL, e.g.
           # https://tartan-img.<subdomain>.workers.dev. Unset → images hit gov.uk directly.
           PUBLIC_IMAGE_ORIGIN: ${{ vars.IMAGE_ORIGIN }}
-          # Set repo variable CF_BEACON_TOKEN to the Cloudflare Web Analytics
-          # beacon token (dash.cloudflare.com → Web Analytics → your site).
-          # Unset → no analytics script emitted.
-          CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: ./apps/web/dist
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}   # scoped: Account → Cloudflare Pages → Edit
+          command: pages deploy apps/web/dist --project-name scottish-tartan-finder --branch main
+        env:
+          CLOUDFLARE_ACCOUNT_ID: d0e1f65bab572b7611b2e8f6992caddb

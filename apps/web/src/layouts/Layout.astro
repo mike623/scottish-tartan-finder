@@ -2,9 +2,6 @@
 import '../styles/global.css';
 import { base } from '../lib/base';
 
-// ponytail: CF Web Analytics beacon, only emits when token set (prod)
-const cfBeaconToken = import.meta.env.CF_BEACON_TOKEN || '';
-
 interface Props {
   title: string;
   description?: string;
@@ -58,9 +55,6 @@ const navItems: Array<{ key: 'search' | 'browse' | 'categories' | 'identify' | '
     <link rel="preconnect" href="https://www.tartanregister.gov.uk" />
     <link rel="dns-prefetch" href="https://www.tartanregister.gov.uk" />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    {cfBeaconToken && (
-      <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token": "${cfBeaconToken}"}`}></script>
-    )}
   </head>
   <body>
     <div id="app">

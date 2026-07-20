@@ -2,8 +2,7 @@ name: Incremental crawl and redeploy
 
 # Delta sync: pulls the Register's "What's New" feed, detail-fetches only new
 # refs (capped), commits data/tartans-index.json if it changed, then rebuilds
-# and deploys Pages in the same job (a GITHUB_TOKEN commit would not re-trigger
-# deploy.yml on its own).
+# and deploys to Cloudflare Pages in the same job.
 
 on:
   schedule:
@@ -21,12 +20,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   crawl-deploy:
@@ -52,16 +45,12 @@ jobs:
             git push
           fi
       - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+        env:
+          PUBLIC_IMAGE_ORIGIN: ${{ vars.IMAGE_ORIGIN }}
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: ./apps/web/dist
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: crawl-deploy
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: pages deploy apps/web/dist --project-name scottish-tartan-finder --branch main
+        env:
+          CLOUDFLARE_ACCOUNT_ID: d0e1f65bab572b7611b2e8f6992caddb

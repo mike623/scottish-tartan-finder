@@ -32,7 +32,7 @@ npm test -w packages/scraper   # scraper unit tests (node:test, offline fixtures
 
 ## Deploy
 
-Push to `main` → `.github/workflows/deploy.yml`: `npm ci` → `npm run build` → uploads `apps/web/dist` to GitHub Pages. **CI does not crawl** — it builds from the committed `data/tartans-index.json`. `apps/web/astro.config.mjs` pins `base: '/scottish-tartan-finder'`, so the site is served under that path.
+Push to `main` → `.github/workflows/deploy.yml`: `npm ci` → `npm run build` → `wrangler pages deploy apps/web/dist` to **Cloudflare Pages** (project `scottish-tartan-finder`, live at `https://scottish-tartan-finder.pages.dev`). **CI does not crawl** — it builds from the committed `data/tartans-index.json`. Requires GH secret `CLOUDFLARE_API_TOKEN` (Account → Cloudflare Pages → Edit); account id is inlined in the workflow. `apps/web/astro.config.mjs` sets `base: '/'` (Pages serves at root). Web Analytics is enabled per-project in the Cloudflare dashboard (auto-injects the beacon; no app code).
 
 ## Web architecture (`apps/web`)
 
