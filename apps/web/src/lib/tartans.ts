@@ -39,7 +39,11 @@ export function getTartanByRef(ref: number): TartanRecord | undefined {
 // local dev works with no worker. The worker mounts the same /imageCreation path+params,
 // so only the origin differs.
 // `||` (not `??`) so an empty string from an unset CI variable also falls back.
-const IMAGE_ORIGIN = import.meta.env.PUBLIC_IMAGE_ORIGIN || 'https://www.tartanregister.gov.uk';
+// Exported so client islands that build image URLs in JS (browse/search) use the same
+// origin instead of re-hardcoding gov.uk. NOTE: bundled client scripts must NOT import
+// this from tartans.ts (it pulls in the whole index JSON) — they read PUBLIC_IMAGE_ORIGIN
+// directly or via a data-attribute.
+export const IMAGE_ORIGIN = import.meta.env.PUBLIC_IMAGE_ORIGIN || 'https://www.tartanregister.gov.uk';
 
 export function imageSrc(t: Pick<TartanRecord, 'ref'>, size = 360): string {
   return `${IMAGE_ORIGIN}/imageCreation?height=${size}&ref=${t.ref}&width=${size}`;

@@ -44,6 +44,10 @@ const total = Object.values(counts).reduce((a, b) => a + b, 0);
   <script>
     import Fuse from 'fuse.js';
 
+    // Edge-cache origin (Cloudflare Worker) baked in at build; falls back to gov.uk direct.
+    // Don't import from tartans.ts here — that bundles the whole index JSON into the client.
+    const IMAGE_ORIGIN = import.meta.env.PUBLIC_IMAGE_ORIGIN || 'https://www.tartanregister.gov.uk';
+
     interface T { r: number; n: string; c: string; d: string; y: string; o: string; }
 
     const grid = document.getElementById('results') as HTMLDivElement;
@@ -70,7 +74,7 @@ const total = Object.values(counts).reduce((a, b) => a + b, 0);
       String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     function cardHTML(t: T): string {
-      const img = 'https://www.tartanregister.gov.uk/imageCreation?height=360&ref=' + t.r + '&width=360';
+      const img = IMAGE_ORIGIN + '/imageCreation?height=360&ref=' + t.r + '&width=360';
       const meta = [t.d, t.y].filter(Boolean).join(' · ');
       return '<a class="tf-card" href="' + BASE + 'tartan/' + t.r + '">' +
         '<div class="tf-prev"><span class="tf-prev-label">tartan preview</span>' +
