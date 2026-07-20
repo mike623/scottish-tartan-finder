@@ -2,7 +2,7 @@
 
 A calm, fast, static catalogue for searching and browsing **every tartan in the Scottish Register of Tartans** — 10,822 records, no accounts, no clutter. Search by name, clan, district, designer, notes or reference, and read the record behind each design.
 
-**Live:** <https://mike623.github.io/scottish-tartan-finder/>
+**Live:** <https://scottish-tartan-finder.pages.dev>
 
 ![Scottish Tartan Finder home page](docs/assets/home.png)
 
@@ -22,22 +22,23 @@ A calm, fast, static catalogue for searching and browsing **every tartan in the 
 
 | Fuzzy search | Tartan detail |
 | :---: | :---: |
-| [![Search](docs/assets/search.png)](https://mike623.github.io/scottish-tartan-finder/search/) | [![Tartan detail](docs/assets/detail.png)](https://mike623.github.io/scottish-tartan-finder/tartan/14598/) |
+| [![Search](docs/assets/search.png)](https://scottish-tartan-finder.pages.dev/search/) | [![Tartan detail](docs/assets/detail.png)](https://scottish-tartan-finder.pages.dev/tartan/14598/) |
 | **Browse by category** | **Identify from a photo** |
-| [![Categories](docs/assets/categories.png)](https://mike623.github.io/scottish-tartan-finder/categories/) | [![Identify](docs/assets/identify.png)](https://mike623.github.io/scottish-tartan-finder/identify/) |
+| [![Categories](docs/assets/categories.png)](https://scottish-tartan-finder.pages.dev/categories/) | [![Identify](docs/assets/identify.png)](https://scottish-tartan-finder.pages.dev/identify/) |
 
 ## How it works
 
 Two workspaces, one dataset:
 
 ```
-Scottish Register  ──►  packages/scraper  ──►  data/tartans-index.json  ──►  apps/web (Astro)  ──►  GitHub Pages
+Scottish Register  ──►  packages/scraper  ──►  data/tartans-index.json  ──►  apps/web (Astro)  ──►  Cloudflare Pages
    (public pages)        polite crawler          the shared contract         static site + client search
 ```
 
 - **The scraper** discovers tartan reference IDs from the Register's public A–Z pages and "What's New" feed (never brute-forcing numeric IDs), fetches each detail page, and parses it into a structured record. It writes `data/tartans-index.json`.
 - **The web app** reads that JSON at build time to generate a static page per tartan, plus a compact index the browser uses for search and browse.
-- **CI** rebuilds and deploys to GitHub Pages on every push to `main`; a weekly workflow runs an incremental crawl, commits any new tartans, and redeploys.
+- **Images** are served through a Cloudflare Worker (`packages/image-cache-worker`) that cache-first proxies the Register's on-the-fly renders at the edge — keeping the site fast without mirroring the source.
+- **CI** rebuilds and deploys to Cloudflare Pages on every push to `main`; a weekly workflow runs an incremental crawl, commits any new tartans, and redeploys.
 
 See [`docs/data-schema.md`](docs/data-schema.md) for the record shape and [`docs/source-investigation.md`](docs/source-investigation.md) for the live-site findings and crawl-safety decisions.
 
@@ -48,16 +49,19 @@ See [`docs/data-schema.md`](docs/data-schema.md) for the record shape and [`docs
 - **[Fuse.js](https://fusejs.io)** — client-side fuzzy search
 - **[Cheerio](https://cheerio.js.org)** — HTML parsing in the scraper
 - **`node:test`** — scraper unit tests
-- **GitHub Actions + Pages** — build, crawl, deploy
+- **[Cloudflare Pages](https://pages.cloudflare.com)** — static hosting + free Web Analytics
+- **[Cloudflare Workers](https://workers.cloudflare.com)** — edge image cache proxy
+- **GitHub Actions** — build, crawl, deploy
 
 ## Project structure
 
 ```
-apps/web/            Astro site (pages, layout, components)
-packages/scraper/    TypeScript crawler (discovery, detail parser, incremental sync)
+apps/web/                 Astro site (pages, layout, components)
+packages/scraper/         TypeScript crawler (discovery, detail parser, incremental sync)
+packages/image-cache-worker/   Cloudflare Worker — edge cache proxy for tartan images
 data/tartans-index.json   Generated catalogue — the scraper↔web contract
-docs/                PRD, data schema, source investigation, design specs
-.github/workflows/   deploy.yml (Pages) · crawl.yml (weekly incremental crawl)
+docs/                     PRD, data schema, source investigation, design specs
+.github/workflows/        deploy.yml (Cloudflare Pages) · crawl.yml (weekly incremental crawl)
 ```
 
 ## Getting started
@@ -72,7 +76,7 @@ npm install
 npm run dev
 ```
 
-Then open the printed local URL (served under the `/scottish-tartan-finder` base path).
+Then open the printed local URL.
 
 ### Commands
 
@@ -97,11 +101,10 @@ The crawler is incremental and resumable: it diffs discovered references against
 Tartan records are attributed to the **Scottish Register of Tartans**, maintained by the National Records of Scotland.
 
 > [!IMPORTANT]
-> The Register's material is **Crown copyright**. Text may be re-used in any format with attribution. **Images** are licensed only for *fair dealing* purposes, so this project **links to** the official images rather than mirroring them, and database rights in the Register rest with the Crown. Any redistribution, self-hosting of images, or commercial use must be reviewed against the [Register's terms](https://www.tartanregister.gov.uk/copyright) first.
+> The Register's material is **Crown copyright**. Text may be re-used in any format with attribution. **Images** are licensed only for *fair dealing* purposes, so this project serves them through a **cache-first edge proxy** of the Register's own renders (transient caching, not a permanent mirror), and database rights in the Register rest with the Crown. Any redistribution, self-hosting of images, or commercial use must be reviewed against the [Register's terms](https://www.tartanregister.gov.uk/copyright) first.
 
 The crawler is deliberately conservative — a descriptive User-Agent, single-request concurrency, rate limiting, backoff, and discovery via the Register's own public indexes (no brute-force enumeration).
 
 ## Roadmap
 
 - **Photo → tartan matching** — a fully in-browser image search (embedding recall + structural re-rank). Designed but not yet built; see [`docs/superpowers/specs/2026-07-16-image-search-design.md`](docs/superpowers/specs/2026-07-16-image-search-design.md).
-- **Image caching proxy** — optional on-demand edge cache to speed up the Register's on-the-fly image rendering.
