@@ -21,9 +21,7 @@ jobs:
           # https://tartan-img.<subdomain>.workers.dev. Unset → images hit gov.uk directly.
           PUBLIC_IMAGE_ORIGIN: ${{ vars.IMAGE_ORIGIN }}
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}   # scoped: Account → Cloudflare Pages → Edit
-          command: pages deploy apps/web/dist --project-name scottish-tartan-finder --branch main
+        run: npx --yes wrangler@4.100.0 pages deploy apps/web/dist --project-name scottish-tartan-finder --branch main
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}   # account-owned token; account id below lets wrangler skip /memberships
           CLOUDFLARE_ACCOUNT_ID: d0e1f65bab572b7611b2e8f6992caddb
